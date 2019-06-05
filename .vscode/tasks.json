@@ -1,0 +1,71 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Generate documentation",
+            "type": "shell",
+            "command": "doxygen.exe",
+            "args": [
+                "config_doc.dox"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/doc/"
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Generate binary",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "mdtoolsmain_setup.py",
+                "build"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/src/python/"
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Run Python",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "command": "${config:python.pythonPath}python.exe",
+            "type": "shell",
+            "args": [
+                "${file}"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": {
+                "fileLocation": "absolute",
+                "pattern": [
+                    {
+                        "regexp": "^\\s+File \"(.*?)\", line ([0-9]+)[,]?.+?$",
+                        "line": 2,
+                        "file": 1,
+                        "message": 0
+                    },
+                    {
+                        "regexp": "^\\s+(.+?)$",
+                        "code": 1
+                    }
+                ]
+            }
+        }
+    ]
+}
