@@ -25,7 +25,7 @@
 ###############################################################################
 
 ###############################################################################
-# Standard function
+# wxPython input
 ###############################################################################
 
 import logging
@@ -35,66 +35,9 @@ import os.path
 import tempfile
 import wx
 
-class LoginDialog(wx.Dialog):
-    def __init__(self, *args, **kwargs):
-        super(LoginDialog, self).__init__(*args, **kwargs)
-
-        # Attributes
-        self.panel = LoginPanel(self)
-
-        # Layout
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.panel, 1, wx.EXPAND)
-        self.SetSizer(sizer)
-        self.SetInitialSize()
-
-    def GetUsername(self):
-        return self.panel.GetUsername()
-
-    def GetPassword(self):
-        return self.panel.GetPassword()
-
-class LoginPanel(wx.Panel):
-    def __init__(self, parent):
-        super(LoginPanel, self).__init__(parent)
-
-        # Attributes
-        self._username = wx.TextCtrl(self)
-        self._passwd = wx.TextCtrl(self, style=wx.TE_PASSWORD)
-
-        # Layout
-        sizer = wx.FlexGridSizer(2, 2, 8, 8)
-        sizer.Add(wx.StaticText(self, label="Username:"),
-                  0, wx.ALIGN_CENTER_VERTICAL)
-        sizer.Add(self._username, 0, wx.EXPAND)
-        sizer.Add(wx.StaticText(self, label="Password:"),
-                  0, wx.ALIGN_CENTER_VERTICAL)
-        sizer.Add(self._passwd, 0, wx.EXPAND)
-        msizer = wx.BoxSizer(wx.VERTICAL)
-        msizer.Add(sizer, 1, wx.EXPAND | wx.ALL, 20)
-        btnszr = wx.StdDialogButtonSizer()
-        button = wx.Button(self, wx.ID_OK)
-        button.SetDefault()
-        btnszr.AddButton(button)
-        msizer.Add(btnszr, 0, wx.ALIGN_CENTER | wx.ALL, 12)
-        btnszr.Realize()
-
-        self.SetSizer(msizer)
-
-    def GetUsername(self):
-        return self._username.GetValue()
-
-    def GetPassword(self):
-        return self._passwd.GetValue()
-
-
-# if __name__ == "__main__":
-#     app = MyApp(False)
-#     app.MainLoop()
-
 
 ###############################################################################
-# Main dialog in wxPython
+# Build a widget to collect the data
 ###############################################################################
 def get_widget(parent, data):
     result = {}
@@ -103,16 +46,21 @@ def get_widget(parent, data):
         label = data['label']
 
     result['label'] = wx.StaticBox(parent, wx.ID_ANY, label)
-    result['sizer'] = wx.StaticBoxSizer(wx.VERTICAL, parent,
-                                        label=label)
+    result['sizer'] = wx.StaticBoxSizer(result['label'], wx.HORIZONTAL)
 
+    sizer = wx.BoxSizer(wx.VERTICAL)
     if 'description' in data:
         result['description'] = wx.StaticText(
             result['label'], label=data['description'])
-        # result['sizer'].Add(result['description'], 0, wx.ALIGN_CENTER_VERTICAL)
+        sizer.Add(result['description'],
+                  0, wx.ALL | wx.ALIGN_LEFT | wx.EXPAND, 2)
 
     result['value'] = wx.TextCtrl(result['label'])
-    # result['sizer'].Add(result['value'], 0, wx.ALIGN_CENTER_VERTICAL)
+    if 'value' in data:
+        result['value'].SetValue(data['value'])
+    sizer.Add(result['value'], 0, wx.ALL | wx.ALIGN_RIGHT | wx.EXPAND, 2)
+
+    result['sizer'].Add(sizer, 1, wx.ALL | wx.EXPAND, 2)
 
     return result
 
@@ -124,7 +72,7 @@ class PrefDialog(wx.Dialog):
     def __init__(self, parent, data):
         super(PrefDialog, self).__init__(
             parent,
-            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+            style=wx.DEFAULT_DIALOG_STYLE)
 
         self.data_description = data
         if '__gui__' not in self.data_description:
@@ -135,44 +83,66 @@ class PrefDialog(wx.Dialog):
         if 'title' in self.data_description['__gui__']:
             self.SetTitle(self.data_description['__gui__']['title'])
 
+        if 'icon' in self.data_description['__gui__']:
+            icon_loc = os.path.abspath(
+                self.data_description['__gui__']['icon'])
+            if os.path.isfile(icon_loc):
+                self.SetIcon(wx.Icon(
+                    self.data_description['__gui__']['icon']))
+            else:
+                logging.error('Can not find the icon at %s', icon_loc)
+
         self.panel = wx.Panel(self)
+        self.data_widget = {}
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-
-        self.data_widget = {}
         for key in self.data_description:
             if not key.endswith("__") and not key.startswith("__"):
                 self.data_widget[key] = get_widget(self.panel,
                                                    self.data_description[key])
-                sizer.Add(self.data_widget[key]['label'],
-                          0, wx.ALL | wx.CENTER, 5)
+                sizer.Add(self.data_widget[key]['sizer'],
+                          0, wx.ALL | wx.EXPAND, 5)
 
-        # buttons
+        # button
         button_label = "OK"
         if 'button_label' in self.data_description['__gui__']:
             button_label = self.data_description['__gui__']['button_label']
-        button = wx.Button(self.panel, wx.ID_OK, label=button_label)
-        button.SetDefault()
-        sizer.Add(button, 0, wx.ALIGN_CENTER | wx.ALL, 12)
-        button.Bind(wx.EVT_BUTTON, self.on_ok)
-        self.panel.SetSizer(sizer)
 
-        # self.SetSize((300, 690))
+        button = wx.Button(self.panel, wx.ID_ANY, label=button_label)
+        button.SetDefault()
+        button.Bind(wx.EVT_BUTTON, self.on_ok)
+        self.Bind(wx.EVT_CLOSE, self.on_close)
+
+        sizer.Add(button, 0, wx.ALL | wx.ALIGN_RIGHT, 12)
+        sizer.SetSizeHints(self)
+        self.panel.SetAutoLayout(True)
+        self.panel.SetSizerAndFit(sizer)
+        self.panel.Layout()
         self.Centre()
 
     def on_ok(self, event):
         del event
+        logging.info('Read the new value')
+        for key in self.data_widget:
+            value = self.data_widget[key]['value'].GetValue()
+            if value is not None and len(value) > 0:
+                self.data_description[key]['value'] = value
         self.Destroy()
 
+    def on_close(self, event):
+        del event
+        logging.info('No new value...')
+        self.Destroy()
 
 ###############################################################################
-# Remove the preference file
+# Get the data from the user
 ###############################################################################
 def get_data(data_description):
     app = wx.App()
     dialog = PrefDialog(parent=None, data=data_description)
     dialog.Show()
     app.MainLoop()
+    return dialog.data_description
 
 ###############################################################################
 # Test the frozen situation of the executable
@@ -248,13 +218,30 @@ def __main():
     conf = {
         '__gui__': {
             'title': 'The title here',
-            'icon': 'the icon',
+            'icon': 'src/python/upref/tower.ico',
             'button_label': 'OKOK',
         },
         'url': {
             'label': 'URL',
             'description': 'Could you give me a coffee',
-        }
+        },
+        'login': {
+            'label': 'Login',
+            'description': 'Could you give me a coffee again',
+        },
+        'logsdfin11': {
+            'label': 'Login new one',
+            'description': 'Could you give me a coffee black',
+        },
+        'logqqqin13': {
+            'label': 'Login',
+            'description': 'Could you give me a\nTEA',
+        },
+        'loginfsdf12': {
+            'label': 'Login',
+            'description': 'Could you give me a coffee again',
+            'value': "lkjhlkhj",
+        },
     }
 
     get_data(conf)
