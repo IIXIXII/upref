@@ -10,7 +10,7 @@
         // "-x", // exit instantly on first error or failed test
         // "--ff", // run all tests but run the last failures first
         // "--color=yes", // color terminal output (yes/no/auto)
-        "${workspaceRoot}/src/python/pymdtools"
+        "${workspaceRoot}/src/python/upref"
     ],
     "python.linting.pep8Enabled": true,
     "python.linting.pep8Args": [
@@ -32,4 +32,5 @@
         "**/doc/html": true
     },
     "git.ignoreLimitWarning": true,
+    "python.testing.nosetestsEnabled": false,
 }
