@@ -35,9 +35,15 @@ import os.path
 import collections
 import tempfile
 from copy import deepcopy
-import wx
 import yaml
 
+
+if (__package__ in [None, '']) and ('.' not in __name__):
+    import gui
+    import tty
+else:
+    from . import gui
+    from . import tty
 
 ###############################################################################
 # The filename of the default configuration
@@ -174,92 +180,45 @@ def dict_merge(dct, merge_dct, add_keys=True):
             dct[k] = value
     return dct
 
-###############################################################################
-# Main dialog in wxPython
-###############################################################################
-def get_widget(parent, data):
-    result = {}
-    label = ""
-    if 'label' in data:
-        label = data['label']
-
-    result['label'] = wx.StaticBox(parent, wx.ID_ANY, label)
-    result['sizer'] = wx.StaticBoxSizer(result['label'], wx.VERTICAL)
-
-    if 'description' in data:
-        result['description'] = wx.StaticText(
-            result['label'], label=data['description'])
-        result['sizer'].Add(result['description'], 0, wx.ALL, 5)
-
-    result['value'] = wx.TextCtrl(result['label'])
-    result['sizer'].Add(result['value'], 0, wx.ALL, 5)
-
-    return result
-
-###############################################################################
-# Main dialog in wxPython
-###############################################################################
-class PrefDialog(wx.Dialog):
-    def __init__(self, parent, data):
-        super(PrefDialog, self).__init__(
-            parent,
-            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
-
-        self.data_description = data
-        if '__gui__' not in self.data_description:
-            self.data_description['__gui__'] = {}
-        self.init_ui()
-
-    def init_ui(self):
-        if 'title' in self.data_description['__gui__']:
-            self.SetTitle(self.data_description['__gui__']['title'])
-
-        self.panel = wx.Panel(self)
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-
-        self.data_widget = {}
-        for key in self.data_description:
-            self.data_widget[key] = get_widget(self.panel,
-                                               self.data_description[key])
-            sizer.Add(self.data_widget[key]['label'],
-                      0, wx.ALL | wx.CENTER, 5)
-
-        # buttons
-        self.btn_ok = wx.Button(self.panel, wx.ID_OK,
-                                label="ok", size=(55, 30))
-        self.btn_ok.SetMaxSize(wx.Size(55, 30))
-        self.btn_ok.Bind(wx.EVT_BUTTON, self.on_ok)
-
-        sizer.Add(self.btn_ok, 0, wx.ALL | wx.CENTER, 5)
-        self.panel.SetSizer(sizer)
-
-        # self.SetSize((300, 690))
-        self.Centre()
-
-    def on_ok(self, event):
-        del event
-        self.Destroy()
-
 
 ###############################################################################
 # Get the value of preference or setting
 ###############################################################################
-def get_pref(data_description, name):
-    # default is merged with the data from the call
-    default = dict_merge(default_conf(), data_description)
+def get_pref(data_description, name, interface="gui", force_renew=False):
     # And finally merged with the data from the user preference
-    current_data = dict_merge(default, current_upref(name))
+    current_data = dict_merge(data_description, current_upref(name))
+    default = default_conf()
 
-    result = {}
-    need_other_value = False
-    for data in current_data:
-        value = current_data[data]['value']
-        result[data] = value
-        if value is None or len(value) == 0:
-            need_other_value = True
+    while (not all_values_are_set(current_data)) or force_renew:
+        force_renew = False
+        completed_data = dict_merge(default, current_data)
+        if interface == "gui":
+            completed_data = gui.get_data(completed_data)
+        else:
+            completed_data = tty.get_data(completed_data)
 
-    return current_data
+        for key in completed_data:
+            if not key.endswith("__") and not key.startswith("__"):
+                value = completed_data[key].get('value')
+                if value is None or len(value) == 0:
+                    current_data[key]['value'] = value
+
+        save_conf(current_data, upref_filename(name))
+
+    return conv_description_to_raw(current_data)
+
+###############################################################################
+# Conversion from the direct pref dict to a dict of descripiton
+###############################################################################
+def all_values_are_set(data_description):
+    result = True
+    for key in data_description:
+        if not key.endswith("__") and not key.startswith("__"):
+            value = data_description[key].get('value')
+            if value is None or len(value) == 0:
+                result = False
+
+    return result
 
 ###############################################################################
 # Conversion from the direct pref dict to a dict of descripiton
@@ -279,18 +238,21 @@ def conv_raw_to_description(data):
 def conv_description_to_raw(data_description):
     result = {}
     for data in data_description:
-        if 'value' in data_description[data]:
-            result[data] = data_description[data]['value']
-        else:
-            logging.error("No value in the pref %s", data)
+        if not data.endswith("__") and not data.startswith("__"):
+            if 'value' in data_description[data]:
+                result[data] = data_description[data]['value']
+            else:
+                logging.error("No value in the pref %s", data)
 
     return result
 
 ###############################################################################
 # Get the value of preference or setting
 ###############################################################################
-def set_pref(data, name):
-    data = dict_merge(current_upref(name), conv_raw_to_description(data))
+def set_pref(data, data_description, name):
+    if data_description is None:
+        data_description = current_upref(name)
+    data = dict_merge(data_description, conv_raw_to_description(data))
     save_conf(data, upref_filename(name))
 
 ###############################################################################
@@ -300,15 +262,6 @@ def remove_pref(name):
     filename = upref_filename(name)
     if os.path.isfile(filename):
         os.remove(filename)
-
-###############################################################################
-# Remove the preference file
-###############################################################################
-def ask_user(data_description):
-    app = wx.App()
-    dialog = PrefDialog(parent=None, data=data_description)
-    dialog.Show()
-    app.MainLoop()
 
 ###############################################################################
 # Test the frozen situation of the executable
@@ -381,17 +334,12 @@ def __main():
     logging.info('The Python version is %s.%s.%s',
                  sys.version_info[0], sys.version_info[1], sys.version_info[2])
 
-    # app = wx.App()
-    # ex = PrefDialog(None)
-    # ex.Show()
-    # app.MainLoop()
-
-    filename = "example1.conf"
-    ex_conf = load_conf(os.path.join(__get_this_folder(), filename))
-    ex_conf = dict_merge(default_conf(), ex_conf)
-    print(ex_conf)
-    ask_user(ex_conf)
-    print(upref_filename('test'))
+    ex_conf = load_conf(os.path.join(__get_this_folder(), "example1.conf"))
+    data_ex1 = get_pref(ex_conf, "example1")
+    print("Ex1: url=%s" % data_ex1['url'])
+    remove_pref("example1")
+    data_ex1 = get_pref(ex_conf, "example1")
+    print("Ex1: url=%s" % data_ex1['url'])
 
     logging.info('Finished')
     # ------------------------------------

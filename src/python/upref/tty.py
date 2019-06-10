@@ -25,7 +25,7 @@
 ###############################################################################
 
 ###############################################################################
-# wxPython input
+# wxPython input for preference
 ###############################################################################
 
 import logging
@@ -33,133 +33,40 @@ import sys
 import os
 import os.path
 import tempfile
-import wx
+import getpass
 
 __all__ = ['get_data']
-
-###############################################################################
-# Build a widget to collect the data
-###############################################################################
-def get_widget_style(style):
-    style = style.strip().upper()
-    if style == "PASSWORD" or style == "PASSWD" or style == "PASS":
-        return wx.TE_PASSWORD
-
-    return None
-
-###############################################################################
-# Build a widget to collect the data
-###############################################################################
-def get_widget(parent, data):
-    result = {}
-    label = ""
-    if 'label' in data:
-        label = data['label']
-
-    result['label'] = wx.StaticBox(parent, wx.ID_ANY, label)
-    result['sizer'] = wx.StaticBoxSizer(result['label'], wx.HORIZONTAL)
-
-    sizer = wx.BoxSizer(wx.VERTICAL)
-    if 'description' in data:
-        result['description'] = wx.StaticText(
-            result['label'], label=data['description'])
-        sizer.Add(result['description'],
-                  0, wx.ALL | wx.ALIGN_LEFT | wx.EXPAND, 2)
-
-    if 'type' in data:
-        result['value'] = wx.TextCtrl(result['label'],
-                                      style=get_widget_style(data['type']))
-    else:
-        result['value'] = wx.TextCtrl(result['label'])
-
-    if 'value' in data:
-        result['value'].SetValue(data['value'])
-    sizer.Add(result['value'], 0, wx.ALL | wx.ALIGN_RIGHT | wx.EXPAND, 2)
-
-    result['sizer'].Add(sizer, 1, wx.ALL | wx.EXPAND, 2)
-
-    return result
-
-
-###############################################################################
-# Main dialog in wxPython
-###############################################################################
-class PrefDialog(wx.Dialog):
-    def __init__(self, parent, data):
-        super(PrefDialog, self).__init__(
-            parent,
-            style=wx.DEFAULT_DIALOG_STYLE)
-
-        self.data_description = data
-        if '__gui__' not in self.data_description:
-            self.data_description['__gui__'] = {}
-        self.init_ui()
-
-    def init_ui(self):
-        if 'title' in self.data_description['__gui__']:
-            self.SetTitle(self.data_description['__gui__']['title'])
-
-        if 'icon' in self.data_description['__gui__']:
-            icon_loc = os.path.abspath(
-                self.data_description['__gui__']['icon'])
-            if os.path.isfile(icon_loc):
-                self.SetIcon(wx.Icon(
-                    self.data_description['__gui__']['icon']))
-            else:
-                logging.error('Can not find the icon at %s', icon_loc)
-
-        self.panel = wx.Panel(self)
-        self.data_widget = {}
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        for key in self.data_description:
-            if not key.endswith("__") and not key.startswith("__"):
-                self.data_widget[key] = get_widget(self.panel,
-                                                   self.data_description[key])
-                sizer.Add(self.data_widget[key]['sizer'],
-                          0, wx.ALL | wx.EXPAND, 5)
-
-        # button
-        button_label = "OK"
-        if 'button_label' in self.data_description['__gui__']:
-            button_label = self.data_description['__gui__']['button_label']
-
-        button = wx.Button(self.panel, wx.ID_ANY, label=button_label)
-        button.SetDefault()
-        button.Bind(wx.EVT_BUTTON, self.on_ok)
-        self.Bind(wx.EVT_CLOSE, self.on_close)
-
-        sizer.Add(button, 0, wx.ALL | wx.ALIGN_RIGHT, 12)
-        sizer.SetSizeHints(self)
-        self.panel.SetAutoLayout(True)
-        self.panel.SetSizerAndFit(sizer)
-        self.panel.Layout()
-        self.Centre()
-
-    def on_ok(self, event):
-        del event
-        logging.info('Read the new value')
-        for key in self.data_widget:
-            value = self.data_widget[key]['value'].GetValue()
-            if value is not None and len(value) > 0:
-                self.data_description[key]['value'] = value
-        self.Destroy()
-
-    def on_close(self, event):
-        del event
-        logging.info('No new value...')
-        self.Destroy()
 
 ###############################################################################
 # Get the data from the user
 ###############################################################################
 def get_data(data_description):
-    app = wx.App()
-    dialog = PrefDialog(parent=None, data=data_description)
-    dialog.Show()
-    app.MainLoop()
-    app.Destroy()
-    return dialog.data_description
+    gui = data_description.get('__gui__')
+    if 'title' in gui:
+        print(gui['title'])
+        print('-' * len(gui['title']))
+        print()
+
+    for key in data_description:
+        if not key.endswith("__") and not key.startswith("__"):
+            data = data_description[key]
+            if 'label' in data:
+                print(data['label'])
+            if 'description' in data:
+                print(data['description'])
+
+            if 'type' in data_description[key] \
+                    and data_description[key]['type'].upper().startswith("PASS"):
+                data_description[key]['value'] = getpass.getpass("-->")
+            else:
+                data_description[key]['value'] = input("-->")
+
+            print()
+
+    if 'button_label' in gui:
+        print(gui['button_label'])
+
+    return data_description
 
 ###############################################################################
 # Test the frozen situation of the executable

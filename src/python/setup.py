@@ -25,14 +25,14 @@
 ###############################################################################
 
 ###############################################################################
-# @package pymdtools
+# @package upref
 # Markdown Tools develops for Gucihet Entreprises
 #
 ###############################################################################
 
 from setuptools import setup, find_packages
 
-import pymdtools
+import upref
 
 # Ceci n'est qu'un appel de fonction. Mais il est trèèèèèèèèèèès long
 # et il comporte beaucoup de paramètres
@@ -42,7 +42,7 @@ setup(
     name='upref',
 
     # la version du code
-    version=pymdtools.__version__,
+    version=upref.__version__,
 
     # Liste les packages à insérer dans la distribution
     # plutôt que de le faire à la main, on utilise la foncton
@@ -50,21 +50,22 @@ setup(
     # python recursivement dans le dossier courant.
     # C'est pour cette raison que l'on a tout mis dans un seul dossier:
     # on peut ainsi utiliser cette fonction facilement
-    packages=find_packages(),
+    packages=find_packages(exclude=["*test*"]),
 
     # votre pti nom
-    author=pymdtools.__author__,
+    author=upref.__author__,
 
     # Votre email, sachant qu'il sera publique visible, avec tous les risques
     # que ça implique.
-    author_email=pymdtools.__email__,
+    author_email=upref.__email__,
 
     # Une description courte
-    description=pymdtools.__doc__,
+    description=upref.__doc__,
 
     # Une description longue, sera affichée pour présenter la lib
     # Généralement on dump le README ici
-    long_description=pymdtools.__doc__,
+    long_description=upref.__doc__,
+    long_description_content_type='text/markdown',
 
     # Vous pouvez rajouter une liste de dépendances pour votre lib
     # et même préciser une version. A l'installation, Python essayera de
@@ -74,10 +75,15 @@ setup(
     #
     # Dans notre cas on en a pas besoin, donc je le commente, mais je le
     # laisse pour que vous sachiez que ça existe car c'est très utile.
-    # install_requires= ,
+    install_requires=["wx", "pyyaml"],
 
     # Active la prise en compte du fichier MANIFEST.in
     include_package_data=True,
+
+    package_data={
+        # If any package contains *.txt or *.rst files, include them:
+        '': ['*.conf', '*.ico'],
+    },
 
     # Une url qui pointe vers la page officielle de votre lib
     url='https://github.com/IIXIXII/upref',
@@ -92,6 +98,7 @@ setup(
     classifiers=[
         "Programming Language :: Python",
         "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.5",
     ],
 
@@ -110,7 +117,7 @@ setup(
 
     # A fournir uniquement si votre licence n'est pas listée dans "classifiers"
     # ce qui est notre cas
-    license=pymdtools.__license__,
+    license=upref.__license__,
 
     # Il y a encore une chiée de paramètres possibles, mais avec ça vous
     # couvrez 90% des besoins
