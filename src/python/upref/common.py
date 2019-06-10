@@ -189,7 +189,8 @@ def get_pref(data_description, name, interface="gui", force_renew=False):
     current_data = dict_merge(data_description, current_upref(name))
     default = default_conf()
 
-    while (not all_values_are_set(current_data)) or force_renew:
+    not_all_values_are_set = not all_values_are_set(current_data)
+    while not_all_values_are_set or force_renew:
         force_renew = False
         completed_data = dict_merge(default, current_data)
         if interface == "gui":
@@ -204,6 +205,12 @@ def get_pref(data_description, name, interface="gui", force_renew=False):
                     current_data[key]['value'] = value
 
         save_conf(current_data, upref_filename(name))
+        not_all_values_are_set = not all_values_are_set(current_data)
+        if not_all_values_are_set:
+            if interface == "gui":
+                gui.message("You need to fill all the data")
+            else:
+                tty.message("You need to fill all the data")
 
     return conv_description_to_raw(current_data)
 
@@ -249,7 +256,7 @@ def conv_description_to_raw(data_description):
 ###############################################################################
 # Get the value of preference or setting
 ###############################################################################
-def set_pref(data, data_description, name):
+def set_pref(data, name, data_description=None):
     # read the current description if there is none
     if data_description is None:
         data_description = current_upref(name)

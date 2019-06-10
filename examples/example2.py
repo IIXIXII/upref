@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 ###############################################################################
 #
@@ -25,53 +25,30 @@
 ###############################################################################
 
 ###############################################################################
-# @package upref
-# Small tool to grab data from the user and to save it
-#
+# Standard function
 ###############################################################################
 
-import logging
-import sys
-
-from .common import get_pref
-from .common import set_pref
-from .common import remove_pref
-from .common import upref_filename
-from .common import load_conf
-from .common import current_upref
-
-__version__ = "1.0.1"
-__author__ = "Florent Tournois"
-__copyright__ = "Copyright 2018, Florent Tournois"
-
-__credits__ = ["Arnaud Boidard, Bernard Migaud"]
-__license__ = "MIT"
-__maintainer__ = "Florent Tournois"
-__email__ = "florent.tournois@gmail.fr"
-__status__ = "Production"
-
-
-__all__ = ['get_pref',
-           'set_pref',
-           'remove_pref',
-           'upref_filename',
-           'load_conf',
-           'current_upref',
-           ]
-
+import os
+import os.path
+import upref
 
 ###############################################################################
 # Main script call only if this script is runned directly
 ###############################################################################
 def __main():
-    # ------------------------------------
-    logging.info('Started %s', __file__)
-    logging.info('The Python version is %s.%s.%s',
-                 sys.version_info[0], sys.version_info[1], sys.version_info[2])
+    # a conf in a separate file for the gui
+    ex_conf = upref.load_conf(os.path.join(
+        os.path.dirname(__file__), "example2.conf"))
 
-    logging.info('Finished')
+    # get the data from the user
+    data = upref.get_pref(ex_conf, "example2")
 
-    # ------------------------------------
+    print("The url of the super app is %s" % data['url'])
+    print("Your login is %s" % data['login'])
+
+    print("It is the wrong login !!!!")
+    print("Remove it")
+    upref.set_pref({'login': None}, name="example2")
 
 
 ###############################################################################

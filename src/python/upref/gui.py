@@ -72,7 +72,7 @@ def get_widget(parent, data):
     else:
         result['value'] = wx.TextCtrl(result['label'])
 
-    if 'value' in data:
+    if 'value' in data and data['value'] is not None:
         result['value'].SetValue(data['value'])
     sizer.Add(result['value'], 0, wx.ALL | wx.ALIGN_RIGHT | wx.EXPAND, 2)
 
@@ -100,13 +100,19 @@ class PrefDialog(wx.Dialog):
             self.SetTitle(self.data_description['__gui__']['title'])
 
         if 'icon' in self.data_description['__gui__']:
-            icon_loc = os.path.abspath(
-                self.data_description['__gui__']['icon'])
-            if os.path.isfile(icon_loc):
-                self.SetIcon(wx.Icon(
-                    self.data_description['__gui__']['icon']))
-            else:
-                logging.error('Can not find the icon at %s', icon_loc)
+            data_ico = self.data_description['__gui__']['icon']
+            ico_locations = []
+            ico_locations.append(data_ico)
+            ico_locations.append(os.path.abspath(data_ico))
+            loca_path = os.path.split(__file__)[0]
+            ico_locations.append(os.path.join(loca_path, data_ico))
+            loca_path = os.path.split(sys.executable)[0]
+            ico_locations.append(os.path.join(loca_path, data_ico))
+
+            for loc in ico_locations:
+                if os.path.isfile(loc):
+                    self.SetIcon(wx.Icon(loc))
+                    break
 
         self.panel = wx.Panel(self)
         self.data_widget = {}
@@ -161,6 +167,16 @@ def get_data(data_description):
     app.Destroy()
     return dialog.data_description
 
+
+###############################################################################
+# Display a message
+###############################################################################
+def message(msg_txt):
+    app = wx.App()
+    wx.MessageBox(msg_txt, 'Information', wx.OK | wx.ICON_INFORMATION)
+    app.Destroy()
+
+
 ###############################################################################
 # Test the frozen situation of the executable
 ###############################################################################
@@ -177,6 +193,7 @@ def is_frozen():
 def __get_this_folder():
     return os.path.split(os.path.abspath(os.path.realpath(
         __get_this_filename())))[0]
+
 
 ###############################################################################
 # Find the filename of this file (depend on the frozen or not)
@@ -235,7 +252,7 @@ def __main():
     conf = {
         '__gui__': {
             'title': 'The title here',
-            'icon': 'src/python/upref/tower.ico',
+            'icon': 'tower.ico',
             'button_label': 'Cool baby',
         },
         'url': {
