@@ -29,7 +29,8 @@
         "**/.hg": true,
         "**/CVS": true,
         "**/.DS_Store": true,
-        "**/doc/html": true
+        "**/doc/html": true,
+        "**/docs/html": true,
     },
     "git.ignoreLimitWarning": true,
     "python.testing.nosetestsEnabled": false,

@@ -23,7 +23,8 @@ Code example
 
 
 At the first execution, there is a window to grab the data. The second execution, there will be no windows, the data are only read from the file.
-The data are saved in a yaml file at %APPDATA%/.upref/myprog.conf or ~/.local/share/.upref/myprog.conf.
+
+All data are saved in a yaml file at %APPDATA%/.upref/myprog.conf or ~/.local/share/.upref/myprog.conf.
 
     # myprog.conf 
     login:

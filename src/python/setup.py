@@ -30,9 +30,23 @@
 #
 ###############################################################################
 
+import io
+import os
+import os.path
 from setuptools import setup, find_packages
 
 import upref
+
+
+__root__ = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+# Import the README and use it as the long-description.
+# Note: this will only work if 'README.md' is present in your MANIFEST.in file!
+try:
+    with io.open(os.path.join(__root__, 'README.md'), encoding='utf-8') as f:
+        __long_description__ = '\n' + f.read()
+except FileNotFoundError:
+    __long_description__ = upref.__doc__
 
 # Ceci n'est qu'un appel de fonction. Mais il est trèèèèèèèèèèès long
 # et il comporte beaucoup de paramètres
@@ -50,7 +64,8 @@ setup(
     # python recursivement dans le dossier courant.
     # C'est pour cette raison que l'on a tout mis dans un seul dossier:
     # on peut ainsi utiliser cette fonction facilement
-    packages=find_packages(exclude=["*test*"]),
+    packages=find_packages(exclude=["test_*.py"]),
+    py_modules=['upref'],
 
     # votre pti nom
     author=upref.__author__,
@@ -64,7 +79,7 @@ setup(
 
     # Une description longue, sera affichée pour présenter la lib
     # Généralement on dump le README ici
-    long_description=upref.__doc__,
+    long_description=__long_description__,
     long_description_content_type='text/markdown',
 
     # Vous pouvez rajouter une liste de dépendances pour votre lib
@@ -82,7 +97,8 @@ setup(
 
     package_data={
         # If any package contains *.txt or *.rst files, include them:
-        '': ['*.conf', '*.ico'],
+        'upref': ['*.conf', '*.ico',
+                  '../../README.md', '../../LICENSE.md'],
     },
 
     # Une url qui pointe vers la page officielle de votre lib
@@ -118,8 +134,5 @@ setup(
     # A fournir uniquement si votre licence n'est pas listée dans "classifiers"
     # ce qui est notre cas
     license=upref.__license__,
-
-    # Il y a encore une chiée de paramètres possibles, mais avec ça vous
-    # couvrez 90% des besoins
 
 )

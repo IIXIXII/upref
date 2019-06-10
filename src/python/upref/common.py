@@ -250,8 +250,10 @@ def conv_description_to_raw(data_description):
 # Get the value of preference or setting
 ###############################################################################
 def set_pref(data, data_description, name):
+    # read the current description if there is none
     if data_description is None:
         data_description = current_upref(name)
+
     data = dict_merge(data_description, conv_raw_to_description(data))
     save_conf(data, upref_filename(name))
 
@@ -261,6 +263,7 @@ def set_pref(data, data_description, name):
 def remove_pref(name):
     filename = upref_filename(name)
     if os.path.isfile(filename):
+        logging.debug('Remove the configuration file: %s', filename)
         os.remove(filename)
 
 ###############################################################################

@@ -55,8 +55,8 @@ def get_data(data_description):
             if 'description' in data:
                 print(data['description'])
 
-            if 'type' in data_description[key] \
-                    and data_description[key]['type'].upper().startswith("PASS"):
+            if 'type' in data_description[key] and \
+                    data_description[key]['type'].upper().startswith("PASS"):
                 data_description[key]['value'] = getpass.getpass("-->")
             else:
                 data_description[key]['value'] = input("-->")

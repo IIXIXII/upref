@@ -25,14 +25,10 @@ REM ############################################################################
 SET FUN="common.bat" 
 CALL %FUN% :CONFIGURE_DISPLAY
 CALL %FUN% :CLEAR_SCREEN
-CALL %FUN% :PRINT_LINE "   Setup python packages" 
+CALL %FUN% :PRINT_LINE "   Setup python package localy" 
 python -V
 pip -V
 python -m pip install --upgrade pip wheel setuptools
-pip install vulture
-pip install twine
-pip install pytest
-pip install -U wxPython
-pip install pyyaml
-pip install sphinx
-pause
+cd ../python
+python setup.py bdist_wheel
+pause 
