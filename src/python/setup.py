@@ -65,7 +65,7 @@ setup(
     # C'est pour cette raison que l'on a tout mis dans un seul dossier:
     # on peut ainsi utiliser cette fonction facilement
     packages=find_packages(exclude=["test_*.py"]),
-    py_modules=['upref'],
+    # py_modules=['upref'],
 
     # votre pti nom
     author=upref.__author__,
@@ -90,7 +90,7 @@ setup(
     #
     # Dans notre cas on en a pas besoin, donc je le commente, mais je le
     # laisse pour que vous sachiez que ça existe car c'est très utile.
-    install_requires=["wx", "pyyaml"],
+    install_requires=["wxPython", "pyyaml"],
 
     # Active la prise en compte du fichier MANIFEST.in
     include_package_data=True,
