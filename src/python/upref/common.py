@@ -140,6 +140,31 @@ def current_upref(name):
 
 
 ###############################################################################
+# Read the current upref of the user
+#
+# @param name the name of the preference file (we add the extension .upref)
+# @return the dict with the preference
+###############################################################################
+def load_data(name, default_data=None):
+    logging.debug('Load the current data for %s.', name)
+    result = load_conf(upref_filename(name))
+    if default_data is not None:
+        result = dict_merge(default_data, result)
+    return result
+
+
+###############################################################################
+# Read the current upref of the user
+#
+# @param name the name of the preference file (we add the extension .upref)
+# @return the dict with the preference
+###############################################################################
+def save_data(data, name):
+    logging.debug('Save the data for %s.', name)
+    return save_conf(data, upref_filename(name))
+
+
+###############################################################################
 # Recursive dict merge. Inspired by :meth:``dict.update()``, instead of
 # updating only top-level keys, dict_merge recurses down into dicts nested
 # to an arbitrary depth, updating keys. The ``merge_dct`` is merged into
