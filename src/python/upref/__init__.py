@@ -43,7 +43,7 @@ from .common import load_data
 from .common import save_data
 from .common import current_upref
 
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 __author__ = "Florent Tournois"
 __copyright__ = "Copyright 2018, Florent Tournois"
 
