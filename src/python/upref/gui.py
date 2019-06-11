@@ -171,9 +171,9 @@ def get_data(data_description):
 ###############################################################################
 # Display a message
 ###############################################################################
-def message(msg_txt):
+def message(msg_txt, title):
     app = wx.App()
-    wx.MessageBox(msg_txt, 'Information', wx.OK | wx.ICON_INFORMATION)
+    wx.MessageBox(msg_txt, title, wx.OK | wx.ICON_INFORMATION)
     app.Destroy()
 
 

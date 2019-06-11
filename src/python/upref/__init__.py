@@ -36,12 +36,12 @@ import sys
 from .common import get_pref
 from .common import set_pref
 from .common import remove_pref
+from .common import current_upref
 from .common import upref_filename
-from .common import load_conf
-from .common import save_conf
 from .common import load_data
 from .common import save_data
-from .common import current_upref
+from .common import load_conf
+from .common import save_conf
 
 __version__ = "1.0.3"
 __author__ = "Florent Tournois"

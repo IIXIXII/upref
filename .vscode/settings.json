@@ -16,6 +16,7 @@
     "python.linting.pep8Args": [
         "--config=${workspaceRoot}/src/python/config/pep8.conf"
     ],
+    "python.linting.pylintEnabled": true,
     "python.linting.pylintArgs": [
         "--rcfile=${workspaceRoot}/src/python/config/pylint.conf"
     ],
