@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 ###############################################################################
 #
@@ -25,59 +25,35 @@
 ###############################################################################
 
 ###############################################################################
-# @package upref
-# Small tool to grab data from the user and to save it
-#
+# Standard function
 ###############################################################################
 
-import logging
-import sys
-
-from .common import get_pref
-from .common import set_pref
-from .common import remove_pref
-from .common import upref_filename
-from .common import load_conf
-from .common import save_conf
-from .common import load_data
-from .common import save_data
-from .common import current_upref
-
-__version__ = "1.0.2"
-__author__ = "Florent Tournois"
-__copyright__ = "Copyright 2018, Florent Tournois"
-
-__credits__ = ["Arnaud Boidard, Bernard Migaud"]
-__license__ = "MIT"
-__maintainer__ = "Florent Tournois"
-__email__ = "florent.tournois@gmail.fr"
-__status__ = "Production"
+import upref
 
 
-__all__ = ['get_pref',
-           'set_pref',
-           'remove_pref',
-           'upref_filename',
-           'load_conf',
-           'save_conf',
-           'load_data',
-           'save_data',
-           'current_upref',
-           ]
+###############################################################################
+def start():
+    my_data_user = {"configuration_ui":
+                    {"xml": "kjhlkjh"}}
+    upref.save_data(my_data_user, "my_personnal_data")
+
+###############################################################################
+def read():
+    default_data = {"configuration_ui":
+                    {"source": "default", "xml": "default"}}
+    data = upref.load_data("my_personnal_data", default_data=default_data)
+    print(data)
 
 
 ###############################################################################
 # Main script call only if this script is runned directly
 ###############################################################################
 def __main():
-    # ------------------------------------
-    logging.info('Started %s', __file__)
-    logging.info('The Python version is %s.%s.%s',
-                 sys.version_info[0], sys.version_info[1], sys.version_info[2])
-
-    logging.info('Finished')
-
-    # ------------------------------------
+    upref.remove_pref("my_personnal_data")
+    read()
+    start()
+    read()
+    # read()
 
 
 ###############################################################################
