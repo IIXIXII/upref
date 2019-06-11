@@ -40,7 +40,7 @@ from .common import upref_filename
 from .common import load_conf
 from .common import current_upref
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 __author__ = "Florent Tournois"
 __copyright__ = "Copyright 2018, Florent Tournois"
 
