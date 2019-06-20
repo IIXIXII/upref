@@ -3,7 +3,7 @@
     "python.testing.pyTestEnabled": true,
     "python.testing.pyTestArgs": [
         "-c",
-        "${workspaceRoot}\\tests\\pytest.ini",
+        "${workspaceRoot}/tests/pytest.ini",
         "--junitxml=${workspaceRoot}/tests/test_result.xml",
         "-v", // increase verbosity
         // "-l", // show locals in tracebacks

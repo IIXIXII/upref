@@ -30,16 +30,10 @@ import os
 import os.path
 import pytest
 
-if (__package__ in [None, '']) and ('.' not in __name__):
-    from common import dict_merge
-    from common import default_conf
-    from common import upref_filename
-    from common import remove_pref
-else:
-    from .common import dict_merge
-    from .common import default_conf
-    from .common import upref_filename
-    from .common import remove_pref
+from upref.common import dict_merge
+from upref.common import default_conf
+from upref.common import upref_filename
+from upref.common import remove_pref
 
 
 def test_dict_merge():

@@ -22,8 +22,7 @@ REM # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN 
 REM # SOFTWARE.
 REM # 
 REM ###############################################################################
-CALL %*
-GOTO EOF
+GOTO MAKE_ACTION
 REM -------------------------------------------------------------------------------
 :PRINT_LINE <textVar>
 (
@@ -59,5 +58,55 @@ REM ----------------------------------------------------------------------------
 :LINE_BREAK
 (
 	CALL :PRINT_LINE "├──────────────────────────────────────────────────────────────────────────────────────────────────┤"
+    exit /b
 )
-:EOF
+REM -------------------------------------------------------------------------------
+:MAKE_ACTION
+CALL :CONFIGURE_DISPLAY
+CALL :CLEAR_SCREEN
+
+SET MYPATH=%~dp0
+cd %MYPATH%
+
+CALL :PRINT_LINE "    MYPATH=%MYPATH%" 
+CALL :LINE_BREAK
+
+IF /I "%1" == "setup" GOTO :action_setup
+
+CALL :PRINT_LINE "   '%1' is not an action. Can not find the right action." 
+GOTO :ENDOFFILE
+
+REM -------------------------------------------------------------------------------
+:action_setup
+CALL :PRINT_LINE "   Setup python packages" 
+REM -------------------------------------------------------------------------------
+python -V
+pip -V
+python -m pip install --upgrade pip wheel setuptools
+pip install vulture
+pip install twine
+pip install pytest
+pip install -U wxPython
+pip install pyyaml
+pip install sphinx
+goto :ENDOFFILE
+
+:install
+echo INSTALL
+goto :ENDOFFILE
+
+:tikzpgf
+echo TIKZPGF
+goto :ENDOFFILE
+
+:clean
+echo CLEAN
+goto :ENDOFFILE
+
+
+REM -------------------------------------------------------------------------------
+:ENDOFFILE
+CALL :PRINT_LINE "   End of the configuration"
+CALL :LINE_BREAK
+PAUSE
+REM -------------------------------------------------------------------------------

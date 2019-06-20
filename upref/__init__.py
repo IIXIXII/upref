@@ -43,6 +43,7 @@ from .common import save_data
 from .common import load_conf
 from .common import save_conf
 
+
 __version__ = "1.0.3"
 __author__ = "Florent Tournois"
 __copyright__ = "Copyright 2018, Florent Tournois"
