@@ -61,6 +61,13 @@ REM ----------------------------------------------------------------------------
     exit /b
 )
 REM -------------------------------------------------------------------------------
+:UPDATE_PIP
+(
+    python -V
+    pip -V
+    python -m pip install --upgrade pip wheel setuptools
+    exit /b
+)
 :MAKE_ACTION
 CALL :CONFIGURE_DISPLAY
 CALL :CLEAR_SCREEN
@@ -71,24 +78,43 @@ cd %MYPATH%
 CALL :PRINT_LINE "    MYPATH=%MYPATH%" 
 CALL :LINE_BREAK
 
-IF /I "%1" == "setup" GOTO :action_setup
+IF /I "%1" == "requirements"  GOTO :action_requirements
+IF /I "%1" == "requirements-dev"  GOTO :action_requirements_dev
+IF /I "%1" == "install-editable"  GOTO :action_install_editable
+IF /I "%1" == "test"  GOTO :action_test
 
 CALL :PRINT_LINE "   '%1' is not an action. Can not find the right action." 
 GOTO :ENDOFFILE
 
 REM -------------------------------------------------------------------------------
-:action_setup
-CALL :PRINT_LINE "   Setup python packages" 
+:action_requirements
+CALL :PRINT_LINE "   Requirements python packages for running the lib" 
 REM -------------------------------------------------------------------------------
-python -V
-pip -V
-python -m pip install --upgrade pip wheel setuptools
-pip install vulture
-pip install twine
-pip install pytest
-pip install -U wxPython
-pip install pyyaml
-pip install sphinx
+CALL :UPDATE_PIP
+pip install -r requirements.txt
+goto :ENDOFFILE
+
+REM -------------------------------------------------------------------------------
+:action_requirements_dev
+CALL :PRINT_LINE "   Requirements python packages for devs" 
+REM -------------------------------------------------------------------------------
+CALL :UPDATE_PIP
+pip install -r requirements-dev.txt
+goto :ENDOFFILE
+
+REM -------------------------------------------------------------------------------
+:action_install_editable
+CALL :PRINT_LINE "   Install editable version" 
+REM -------------------------------------------------------------------------------
+CALL :UPDATE_PIP
+pip install -e .
+goto :ENDOFFILE
+
+REM -------------------------------------------------------------------------------
+:action_install_editable
+CALL :PRINT_LINE "   Launch test" 
+REM -------------------------------------------------------------------------------
+pytest -V
 goto :ENDOFFILE
 
 :install

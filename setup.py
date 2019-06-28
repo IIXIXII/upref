@@ -79,17 +79,6 @@ setup(
     packages=find_packages(exclude=["test_*.py"]),
     # py_modules=['upref'],
 
-
-    # Vous pouvez rajouter une liste de dépendances pour votre lib
-    # et même préciser une version. A l'installation, Python essayera de
-    # les télécharger et les installer.
-    #
-    # Ex: ["gunicorn", "docutils >= 0.3", "lxml==0.5a7"]
-    #
-    # Dans notre cas on en a pas besoin, donc je le commente, mais je le
-    # laisse pour que vous sachiez que ça existe car c'est très utile.
-    install_requires=["wxPython", "pyyaml"],
-
     # Active la prise en compte du fichier MANIFEST.in
     include_package_data=True,
 
@@ -99,4 +88,6 @@ setup(
                   './README.md', './LICENSE.md'],
     },
 
+    setup_requires=["pytest-runner"],
+    tests_require=["pytest"],
 )
