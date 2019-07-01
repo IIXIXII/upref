@@ -1,9 +1,9 @@
 {
     "python.testing.unittestEnabled": false,
-    "python.testing.pyTestEnabled": true,
-    "python.testing.pyTestArgs": [
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": [
         "-c",
-        "${workspaceRoot}/tests/pytest.ini",
+        "${workspaceRoot}/pytest.ini",
         "--junitxml=${workspaceRoot}/tests/test_result.xml",
         "-v", // increase verbosity
         // "-l", // show locals in tracebacks

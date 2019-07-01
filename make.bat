@@ -111,24 +111,11 @@ pip install -e .
 goto :ENDOFFILE
 
 REM -------------------------------------------------------------------------------
-:action_install_editable
+:action_test
 CALL :PRINT_LINE "   Launch test" 
 REM -------------------------------------------------------------------------------
-pytest -V
+pytest -v
 goto :ENDOFFILE
-
-:install
-echo INSTALL
-goto :ENDOFFILE
-
-:tikzpgf
-echo TIKZPGF
-goto :ENDOFFILE
-
-:clean
-echo CLEAN
-goto :ENDOFFILE
-
 
 REM -------------------------------------------------------------------------------
 :ENDOFFILE
