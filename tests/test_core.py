@@ -30,11 +30,13 @@ import os
 import os.path
 import pytest
 
-from upref.common import dict_merge
-from upref.common import default_conf
-from upref.common import upref_filename
-from upref.common import remove_pref
+sys.path.insert(0, "../")
+sys.path.insert(0, "./")
 
+from upref.core import dict_merge
+from upref.core import default_conf
+from upref.core import upref_filename
+from upref.core import remove_pref
 
 def test_dict_merge():
     aaa = {

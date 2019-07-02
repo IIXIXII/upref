@@ -30,10 +30,13 @@
 #
 ###############################################################################
 
+import sys
 import io
 import os
 import os.path
-from setuptools import setup, find_packages
+import time
+from shutil import rmtree
+from setuptools import setup, find_packages, Command
 
 import upref as mymodule
 
@@ -46,6 +49,68 @@ try:
         __long_description__ = '\n' + f.read()
 except FileNotFoundError:
     __long_description__ = mymodule.__doc__
+
+# -------------------------------------------------------------------------------
+# Increase the version number
+# -------------------------------------------------------------------------------
+def increase_version():
+    about = {}
+    with open(os.path.join(__root__, mymodule.__name__,
+                           'version.py'), "r") as ver:
+        exec(ver.read(), about)
+
+    current_version = about['__version_info__']
+    new_version = (current_version[0],
+                   current_version[1],
+                   current_version[2] + 1)
+
+    with open(os.path.join(__root__, mymodule.__name__,
+                           'version.py'), "w") as ver:
+        ver.write("#!/usr/bin/env python\n")
+        ver.write("# -*- coding: utf-8 -*-\n\n")
+        ver.write("__version_info__ = %s\n" % repr(new_version))
+        ver.write("__release_date__ = '%s'\n" %
+                  time.strftime("%Y-%m-%d", time.gmtime()))
+
+
+class UploadCommand(Command):
+    """Support setup.py upload."""
+
+    description = 'Build and publish the package.'
+    user_options = []
+
+    @staticmethod
+    def status(msg):
+        print('>> {0}'.format(msg))
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        try:
+            self.status('Removing previous builds…')
+            rmtree(os.path.join(__root__, 'dist'))
+        except OSError:
+            pass
+
+        self.status('Building Source and Wheel (universal) distribution…')
+        os.system('{0} setup.py sdist bdist_wheel '
+                  '--universal'.format(sys.executable))
+
+        self.status('Uploading the package to PyPI via Twine…')
+        os.system('twine upload dist/*')
+
+        self.status('Pushing git tags…')
+        os.system('git tag v{0}'.format(mymodule.__version__))
+        os.system('git push --tags')
+        self.status('Change version number…')
+        increase_version()
+
+        sys.exit()
+
 
 # -------------------------------------------------------------------------------
 # All setup parameter
@@ -90,4 +155,8 @@ setup(
 
     setup_requires=["pytest-runner"],
     tests_require=["pytest"],
+
+    cmdclass={
+        'upload': UploadCommand,
+    },
 )

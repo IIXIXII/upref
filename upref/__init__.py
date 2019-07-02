@@ -33,18 +33,31 @@
 import logging
 import sys
 
-from .common import get_pref
-from .common import set_pref
-from .common import remove_pref
-from .common import current_upref
-from .common import upref_filename
-from .common import load_data
-from .common import save_data
-from .common import load_conf
-from .common import save_conf
+if (__package__ in [None, '']) and ('.' not in __name__):
+    from core import get_pref
+    from core import set_pref
+    from core import remove_pref
+    from core import current_upref
+    from core import upref_filename
+    from core import load_data
+    from core import save_data
+    from core import load_conf
+    from core import save_conf
+    from version import __version_info__
+    from version import __release_date__
+else:
+    from .core import get_pref
+    from .core import set_pref
+    from .core import remove_pref
+    from .core import current_upref
+    from .core import upref_filename
+    from .core import load_data
+    from .core import save_data
+    from .core import load_conf
+    from .version import __version_info__
+    from .version import __release_date__
 
-
-__version__ = "1.0.3"
+__version__ = '.'.join(str(c) for c in __version_info__)
 __author__ = "Florent Tournois"
 __copyright__ = "Copyright 2018, Florent Tournois"
 
@@ -75,6 +88,8 @@ def __main():
     logging.info('Started %s', __file__)
     logging.info('The Python version is %s.%s.%s',
                  sys.version_info[0], sys.version_info[1], sys.version_info[2])
+
+    print("version=%s" % __version__)
 
     logging.info('Finished')
 

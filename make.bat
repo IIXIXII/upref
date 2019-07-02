@@ -82,6 +82,7 @@ IF /I "%1" == "requirements"  GOTO :action_requirements
 IF /I "%1" == "requirements-dev"  GOTO :action_requirements_dev
 IF /I "%1" == "install-editable"  GOTO :action_install_editable
 IF /I "%1" == "test"  GOTO :action_test
+IF /I "%1" == "doxygen"  GOTO :action_doxygen
 
 CALL :PRINT_LINE "   '%1' is not an action. Can not find the right action." 
 GOTO :ENDOFFILE
@@ -115,6 +116,41 @@ REM ----------------------------------------------------------------------------
 CALL :PRINT_LINE "   Launch test" 
 REM -------------------------------------------------------------------------------
 pytest -v
+goto :ENDOFFILE
+
+REM -------------------------------------------------------------------------------
+:action_doxygen
+CALL :PRINT_LINE "   Doxygen" 
+REM -------------------------------------------------------------------------------
+cd docs
+SET DOXYGEN_PATH=C:\\Program Files\\doxygen\\bin
+SET DOXYGEN_EXE=doxygen.exe
+SET DOXYGEN_CMD=%DOXYGEN_PATH%\\%DOXYGEN_EXE%
+SET DOC_FOLDER=%~dp0\\docs
+
+SET CONFIG_FILE="%DOC_FOLDER%\\config_doc.dox"
+
+IF EXIST "%DOXYGEN_CMD%" (
+    ECHO "Found doxygen %DOXYGEN_CMD%"
+) ELSE (
+    ECHO "%DOXYGEN_CMD%"
+    ECHO "Doxygen not found"
+    pause
+    GOTO:END
+)
+
+IF EXIST "%CONFIG_FILE%" (
+    ECHO "Found config file %CONFIG_FILE%"
+) ELSE (
+    ECHO "%CONFIG_FILE%"
+    ECHO "Config file not found"
+    pause
+    GOTO:END
+)
+
+CALL :PRINT_LINE "Start doxygen generation"
+"%DOXYGEN_CMD%"  "%CONFIG_FILE%"
+
 goto :ENDOFFILE
 
 REM -------------------------------------------------------------------------------
