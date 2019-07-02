@@ -29,3 +29,4 @@ twine
 pytest
 sphinx
 rinohtype
+sphinx_rtd_theme

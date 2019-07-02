@@ -29,7 +29,7 @@ __pycache__
 /examples/output*
 *.exe
 *.chm
-/doc/html
+/docs/html
 /docs/html_dox
 test*.xml
 *.bak
