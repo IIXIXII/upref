@@ -68,6 +68,8 @@ REM ----------------------------------------------------------------------------
     python -m pip install --upgrade pip wheel setuptools
     exit /b
 )
+
+REM -------------------------------------------------------------------------------
 :MAKE_ACTION
 CALL :CONFIGURE_DISPLAY
 CALL :CLEAR_SCREEN
@@ -136,7 +138,7 @@ IF EXIST "%DOXYGEN_CMD%" (
     ECHO "%DOXYGEN_CMD%"
     ECHO "Doxygen not found"
     pause
-    GOTO:END
+    GOTO :ENDOFFILE
 )
 
 IF EXIST "%CONFIG_FILE%" (
@@ -145,7 +147,7 @@ IF EXIST "%CONFIG_FILE%" (
     ECHO "%CONFIG_FILE%"
     ECHO "Config file not found"
     pause
-    GOTO:END
+    GOTO :ENDOFFILE
 )
 
 CALL :PRINT_LINE "Start doxygen generation"

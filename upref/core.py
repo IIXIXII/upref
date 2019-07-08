@@ -71,8 +71,8 @@ def load_conf(filename):
     filename = os.path.abspath(filename)
 
     if not os.path.isfile(filename):
-        logging.warning('The configuration file does not exists.')
-        logging.warning('The configuration filename is %s', filename)
+        logging.info('The configuration file does not exists.')
+        logging.info('The configuration filename is %s', filename)
         return result
 
     with open(filename, 'r') as ymlfile:

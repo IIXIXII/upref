@@ -6,7 +6,7 @@ A small python module to grab and save some user data like login, password, url 
 Motivation
 ----------
 
-After some project, I want a simple method to find the right login and url from the user and save it.
+After some projects, I want a simple method to find the right login and url from the user and save it.
 
 Code example
 ------------
