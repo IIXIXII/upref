@@ -23,9 +23,13 @@
 # SOFTWARE.
 #
 ###############################################################################
+# pylint: skip-file
 
+from recommonmark.parser import CommonMarkParser
 import os
 import sys
+import recommonmark
+from recommonmark.transform import AutoStructify
 import upref as mymodule
 
 sys.path.insert(0, os.path.abspath('..'))
@@ -41,36 +45,16 @@ language = 'en'
 
 # -- General configuration ---------------------------------------------------
 
-# Add any Sphinx extension module names here, as strings. They can be
-# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
-# ones.
-extensions = [
-    'sphinx.ext.autodoc',
-]
-
 html_static_path = ['layout']
-# Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
-
-# List of patterns, relative to source directory, that match files and
-# directories to ignore when looking for source files.
-# This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
-
+extensions = ['recommonmark']
+source_suffix = ['.rst', '.md']
 
 # -- Options for HTML output -------------------------------------------------
-
-# The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'friendly'
 
-# A list of ignored prefixes for module index sorting.
-# modindex_common_prefix = []
-
-
 # -- Options for HTML output --------------------------------------------------
-
-# The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
 try:
     import sphinx_rtd_theme
     html_theme = 'sphinx_rtd_theme'
@@ -78,3 +62,11 @@ try:
 
 except ImportError:
     html_theme = 'default'
+
+
+def setup(app):
+    app.add_config_value('recommonmark_config', {
+        'url_resolver': lambda url: github_doc_root + url,
+        'auto_toc_tree_section': 'Contents',
+    }, True)
+    app.add_transform(AutoStructify)

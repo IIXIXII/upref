@@ -5,13 +5,13 @@ A small python module to grab and save some user data like login, password, url 
 
 Motivation
 ----------
+
 After some project, I want a simple method to find the right login and url from the user and save it.
 
 Code example
 ------------
 
     import upref
-
     data = upref.get_pref(
             {
                 'login': {'label': 'Your login'},
@@ -20,7 +20,6 @@ Code example
             name="myprog")
     print("Your login is %s" % data['login'])
     print("Your password (not so secret) is %s" % data['passwd'])
-
 
 At the first execution, there is a window to grab the data. The second execution, there will be no windows, the data are only read from the file.
 
@@ -33,7 +32,6 @@ All data are saved in a yaml file at %APPDATA%/.upref/myprog.conf or ~/.local/sh
     passwd:
       label: Your secret password
       value: secret
-
 
 Features
 --------
