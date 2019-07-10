@@ -209,7 +209,12 @@ def dict_merge(dct, merge_dct, add_keys=True):
 ###############################################################################
 # Get the value of preference or setting
 ###############################################################################
-def get_pref(data_description, name, interface="gui", force_renew=False):
+def get_pref(data_description, name, interface="gui", force_renew=False,
+             mandatory=True):
+    # if not mandatory, return the data without asking
+    if not mandatory:
+        return conv_description_to_raw(current_upref(name))
+
     # And finally merged with the data from the user preference
     current_data = dict_merge(data_description, current_upref(name))
     default = default_conf()
