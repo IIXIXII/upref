@@ -37,14 +37,6 @@ import tempfile
 from copy import deepcopy
 import yaml
 
-
-if (__package__ in [None, '']) and ('.' not in __name__):
-    import gui
-    import tty
-else:
-    from . import gui
-    from . import tty
-
 ###############################################################################
 # The filename of the default configuration
 ###############################################################################
@@ -218,6 +210,13 @@ def get_pref(data_description, name, interface="gui", force_renew=False,
     # And finally merged with the data from the user preference
     current_data = dict_merge(data_description, current_upref(name))
     default = default_conf()
+
+    if (__package__ in [None, '']) and ('.' not in __name__):
+        import gui
+        import tty
+    else:
+        from . import gui
+        from . import tty
 
     interact_ = gui if (interface == "gui") else tty
 
