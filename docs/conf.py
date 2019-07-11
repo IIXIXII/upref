@@ -51,6 +51,8 @@ exclude_patterns = []
 extensions = ['m2r']
 source_suffix = ['.rst', '.md']
 
+master_doc = 'index'
+
 # -- Options for HTML output -------------------------------------------------
 pygments_style = 'friendly'
 
