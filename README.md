@@ -4,11 +4,8 @@ upref 🐸
 Upref is a small python module to grab and save some user data like login, password, url (mainly string data). After some projects, I want a simple method to find the right login and url from the user and save it in the personnal data of the user.
 
 [![Wheel Status](https://img.shields.io/pypi/wheel/upref.svg?style=flat)](https://pypi.python.org/pypi/upref/)
-
 [![Latest Version](https://img.shields.io/pypi/v/upref.svg)](https://pypi.python.org/pypi/upref/)
-
 [![Total download](https://img.shields.io/github/downloads/IIXIXII/upref/total.svg)](https://github.com/IIXIXII/upref/releases)
-
 [![License](https://img.shields.io/github/license/IIXIXII/upref.svg)](https://github.com/IIXIXII/upref/blob/master/LICENSE.md)
 
 Installation

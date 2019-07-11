@@ -23,8 +23,6 @@
 ###############################################################################
 # All dependency of the project for devs
 ###############################################################################
--r requirements.txt
--r requirements-docs.txt
-vulture
-twine
-pytest
+sphinx
+sphinx_rtd_theme
+m2r

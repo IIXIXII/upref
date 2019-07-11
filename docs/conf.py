@@ -48,7 +48,7 @@ language = 'en'
 html_static_path = ['layout']
 templates_path = ['_templates']
 exclude_patterns = []
-extensions = ['recommonmark']
+extensions = ['m2r']
 source_suffix = ['.rst', '.md']
 
 # -- Options for HTML output -------------------------------------------------
@@ -64,9 +64,9 @@ except ImportError:
     html_theme = 'default'
 
 
-def setup(app):
-    app.add_config_value('recommonmark_config', {
-        'url_resolver': lambda url: github_doc_root + url,
-        'auto_toc_tree_section': 'Contents',
-    }, True)
-    app.add_transform(AutoStructify)
+# def setup(app):
+#     app.add_config_value('recommonmark_config', {
+#         'url_resolver': lambda url: github_doc_root + url,
+#         'auto_toc_tree_section': 'Contents',
+#     }, True)
+#     app.add_transform(AutoStructify)

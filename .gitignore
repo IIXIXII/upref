@@ -33,6 +33,8 @@ __pycache__
 /docs/html_dox
 test*.xml
 *.bak
+/docs/build
+*.chw
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
