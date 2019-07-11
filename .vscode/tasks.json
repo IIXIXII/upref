@@ -11,7 +11,7 @@
                 "config_doc.dox"
             ],
             "options": {
-                "cwd": "${workspaceRoot}/doc/"
+                "cwd": "${workspaceRoot}/docs/"
             },
             "problemMatcher": [],
             "presentation": {

@@ -22,14 +22,4 @@ REM # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN 
 REM # SOFTWARE.
 REM # 
 REM ###############################################################################
-SET FUN="common.bat" 
-CALL %FUN% :CONFIGURE_DISPLAY
-CALL %FUN% :CLEAR_SCREEN
-CALL %FUN% :PRINT_LINE "   Setup python package localy" 
-python -V
-pip -V
-python -m pip install --upgrade pip wheel setuptools
-pip install twine
-cd ../python
-twine upload dist/*
-pause
+../make.bat %~n0

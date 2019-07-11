@@ -24,117 +24,73 @@
 #
 ###############################################################################
 
+###############################################################################
+# wxPython input for preference
+###############################################################################
+
 import logging
 import sys
 import os
 import os.path
-import pytest
+import tempfile
+import getpass
 
-if (__package__ in [None, '']) and ('.' not in __name__):
-    from common import dict_merge
-    from common import default_conf
-    from common import upref_filename
-    from common import remove_pref
-else:
-    from .common import dict_merge
-    from .common import default_conf
-    from .common import upref_filename
-    from .common import remove_pref
+__all__ = ['get_data']
 
+###############################################################################
+# Get the data from the user
+###############################################################################
+def get_data(data_description):
+    gui = data_description.get('__gui__')
+    if 'title' in gui:
+        print(gui['title'])
+        print('-' * len(gui['title']))
+        print()
 
-def test_dict_merge():
-    aaa = {
-        'a': 1,
-        'b': {
-            'b1': 2,
-            'b2': 3,
-        },
-    }
-    bbb = {
-        'a': 1,
-        'b': {
-            'b1': 4,
-        },
-    }
+    for key in data_description:
+        if not key.endswith("__") and not key.startswith("__"):
+            data = data_description[key]
+            if 'label' in data:
+                print(data['label'])
+            if 'description' in data:
+                print(data['description'])
 
-    assert dict_merge(aaa, bbb)['a'] == 1
-    assert dict_merge(aaa, bbb)['b']['b2'] == 3
-    assert dict_merge(aaa, bbb)['b']['b1'] == 4
+            if 'type' in data_description[key] and \
+                    data_description[key]['type'].upper().startswith("PASS"):
+                data_description[key]['value'] = getpass.getpass("-->")
+            else:
+                data_description[key]['value'] = input("-->")
 
+            print()
 
-def test_inserts_new_keys():
-    """Will it insert new keys by default?"""
-    aaa = {
-        'a': 1,
-        'b': {
-            'b1': 2,
-            'b2': 3,
-        },
-    }
-    bbb = {
-        'a': 1,
-        'b': {
-            'b1': 4,
-            'b3': 5
-        },
-        'c': 6,
-    }
+    if 'button_label' in gui:
+        print(gui['button_label'])
 
-    assert dict_merge(aaa, bbb)['a'] == 1
-    assert dict_merge(aaa, bbb)['b']['b2'] == 3
-    assert dict_merge(aaa, bbb)['b']['b1'] == 4
-    assert dict_merge(aaa, bbb)['b']['b3'] == 5
-    assert dict_merge(aaa, bbb)['c'] == 6
+    return data_description
 
-def test_does_not_insert_new_keys():
-    """Will it avoid inserting new keys when required?"""
-    aaa = {
-        'a': 1,
-        'b': {
-            'b1': 2,
-            'b2': 3,
-        },
-    }
-    bbb = {
-        'a': 1,
-        'b': {
-            'b1': 4,
-            'b3': 5,
-        },
-        'c': 6,
-    }
+###############################################################################
+# Display a message
+###############################################################################
+def message(msg_txt, title):
+    print(title)
+    print(msg_txt)
 
-    assert dict_merge(aaa, bbb, add_keys=False)['a'] == 1
-    assert dict_merge(aaa, bbb, add_keys=False)['b']['b2'] == 3
-    assert dict_merge(aaa, bbb, add_keys=False)['b']['b1'] == 4
-    try:
-        assert dict_merge(aaa, bbb, add_keys=False)['b']['b3'] == 5
-    except KeyError:
-        pass
-    else:
-        raise Exception('New keys added when they should not be')
+###############################################################################
+# Test the frozen situation of the executable
+###############################################################################
+def is_frozen():
+    return getattr(sys, 'frozen', False)
 
-    try:
-        assert dict_merge(aaa, bbb, add_keys=False)['b']['b3'] == 6
-    except KeyError:
-        pass
-    else:
-        raise Exception('New keys added when they should not be')
-
-
-def test_default_conf():
-    assert default_conf()['__gui__'] is not None
-    assert 'lkjslfdqkjhslfdksq' not in default_conf()
-
-def test_upref_filename():
-    assert upref_filename("test") is not None
-    assert upref_filename("test").endswith("test.conf")
-
-    random_name = "lkhjlkhjlkhlkhjlqsdqs"
-    remove_pref(random_name)
-    assert not os.path.isfile(upref_filename(random_name))
-
-    assert upref_filename(random_name) is not None
+###############################################################################
+# Find the filename of this file (depend on the frozen or not)
+# This function return the filename of this script.
+# The function is complex for the frozen system
+#
+# @return the folder of THIS script.
+###############################################################################
+def __get_this_folder():
+    return os.path.split(os.path.abspath(os.path.realpath(
+        __get_this_filename())))[0]
 
 ###############################################################################
 # Find the filename of this file (depend on the frozen or not)
@@ -146,7 +102,7 @@ def test_upref_filename():
 def __get_this_filename():
     result = ""
 
-    if getattr(sys, 'frozen', False):
+    if is_frozen():
         # frozen
         result = sys.executable
     else:
@@ -155,12 +111,19 @@ def __get_this_filename():
 
     return result
 
+
 ###############################################################################
 # Set up the logging system
 ###############################################################################
 def __set_logging_system():
     log_filename = os.path.splitext(os.path.abspath(
         os.path.realpath(__get_this_filename())))[0] + '.log'
+
+    if is_frozen():
+        log_filename = os.path.abspath(os.path.join(
+            tempfile.gettempdir(),
+            os.path.basename(__get_this_filename()) + '.log'))
+
     logging.basicConfig(filename=log_filename, level=logging.DEBUG,
                         format='%(asctime)s: %(message)s',
                         datefmt='%m/%d/%Y %I:%M:%S %p')
@@ -175,13 +138,6 @@ def __set_logging_system():
 
 
 ###############################################################################
-# Launch the test
-###############################################################################
-def __launch_test():
-    pytest.main(__get_this_filename())
-
-
-##############################################################################
 # Main script call only if this script is runned directly
 ###############################################################################
 def __main():
@@ -190,7 +146,37 @@ def __main():
     logging.info('The Python version is %s.%s.%s',
                  sys.version_info[0], sys.version_info[1], sys.version_info[2])
 
-    __launch_test()
+    conf = {
+        '__gui__': {
+            'title': 'The title here',
+            'icon': 'src/python/upref/tower.ico',
+            'button_label': 'Cool baby',
+        },
+        'url': {
+            'label': 'URL',
+            'description': 'Could you give me a coffee not an URL',
+        },
+        'login': {
+            'label': 'Login',
+            'description': 'Could you give me a coffee again',
+        },
+        'logsdfin11': {
+            'label': 'Login new one',
+            'description': 'Could you give me a coffee black',
+        },
+        'logqqqin13': {
+            'label': 'Logoff',
+            'description': 'Could you give me a\nTEA',
+        },
+        'loginfsdf12': {
+            'label': 'Password',
+            'description': 'Could you give me a coffee again',
+            'value': "lkjhlkhj",
+            'type': "pass",
+        },
+    }
+
+    get_data(conf)
 
     logging.info('Finished')
     # ------------------------------------

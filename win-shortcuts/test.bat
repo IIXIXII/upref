@@ -1,4 +1,4 @@
-@ECHO OFF
+@ECHO off
 REM ###############################################################################
 REM # 
 REM # Copyright (c) 2018 Florent TOURNOIS
@@ -22,11 +22,4 @@ REM # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN 
 REM # SOFTWARE.
 REM # 
 REM ###############################################################################
-SET FUN="common.bat" 
-CALL %FUN% :CONFIGURE_DISPLAY
-CALL %FUN% :CLEAR_SCREEN
-CALL %FUN% :PRINT_LINE "   Find unused function " 
-REM ###############################################################################
-cd ../python
-vulture  --ignore-names "test_*,unused_*,create_*" upref
-pause
+../make.bat %~n0

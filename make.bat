@@ -22,8 +22,7 @@ REM # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN 
 REM # SOFTWARE.
 REM # 
 REM ###############################################################################
-CALL %*
-GOTO EOF
+GOTO MAKE_ACTION
 REM -------------------------------------------------------------------------------
 :PRINT_LINE <textVar>
 (
@@ -59,5 +58,106 @@ REM ----------------------------------------------------------------------------
 :LINE_BREAK
 (
 	CALL :PRINT_LINE "├──────────────────────────────────────────────────────────────────────────────────────────────────┤"
+    exit /b
 )
-:EOF
+REM -------------------------------------------------------------------------------
+:UPDATE_PIP
+(
+    python -V
+    pip -V
+    python -m pip install --upgrade pip wheel setuptools
+    exit /b
+)
+
+REM -------------------------------------------------------------------------------
+:MAKE_ACTION
+CALL :CONFIGURE_DISPLAY
+CALL :CLEAR_SCREEN
+
+SET MYPATH=%~dp0
+cd %MYPATH%
+
+CALL :PRINT_LINE "    MYPATH=%MYPATH%" 
+CALL :LINE_BREAK
+
+IF /I "%1" == "requirements"  GOTO :action_requirements
+IF /I "%1" == "requirements-dev"  GOTO :action_requirements_dev
+IF /I "%1" == "install-editable"  GOTO :action_install_editable
+IF /I "%1" == "test"  GOTO :action_test
+IF /I "%1" == "doxygen"  GOTO :action_doxygen
+
+CALL :PRINT_LINE "   '%1' is not an action. Can not find the right action." 
+GOTO :ENDOFFILE
+
+REM -------------------------------------------------------------------------------
+:action_requirements
+CALL :PRINT_LINE "   Requirements python packages for running the lib" 
+REM -------------------------------------------------------------------------------
+CALL :UPDATE_PIP
+pip install -r requirements.txt
+goto :ENDOFFILE
+
+REM -------------------------------------------------------------------------------
+:action_requirements_dev
+CALL :PRINT_LINE "   Requirements python packages for devs" 
+REM -------------------------------------------------------------------------------
+CALL :UPDATE_PIP
+pip install -r requirements-dev.txt
+goto :ENDOFFILE
+
+REM -------------------------------------------------------------------------------
+:action_install_editable
+CALL :PRINT_LINE "   Install editable version" 
+REM -------------------------------------------------------------------------------
+CALL :UPDATE_PIP
+pip install -e .
+goto :ENDOFFILE
+
+REM -------------------------------------------------------------------------------
+:action_test
+CALL :PRINT_LINE "   Launch test" 
+REM -------------------------------------------------------------------------------
+pytest -v
+goto :ENDOFFILE
+
+REM -------------------------------------------------------------------------------
+:action_doxygen
+CALL :PRINT_LINE "   Doxygen" 
+REM -------------------------------------------------------------------------------
+cd docs
+SET DOXYGEN_PATH=C:\\Program Files\\doxygen\\bin
+SET DOXYGEN_EXE=doxygen.exe
+SET DOXYGEN_CMD=%DOXYGEN_PATH%\\%DOXYGEN_EXE%
+SET DOC_FOLDER=%~dp0\\docs
+
+SET CONFIG_FILE="%DOC_FOLDER%\\config_doc.dox"
+
+IF EXIST "%DOXYGEN_CMD%" (
+    ECHO "Found doxygen %DOXYGEN_CMD%"
+) ELSE (
+    ECHO "%DOXYGEN_CMD%"
+    ECHO "Doxygen not found"
+    pause
+    GOTO :ENDOFFILE
+)
+
+IF EXIST "%CONFIG_FILE%" (
+    ECHO "Found config file %CONFIG_FILE%"
+) ELSE (
+    ECHO "%CONFIG_FILE%"
+    ECHO "Config file not found"
+    pause
+    GOTO :ENDOFFILE
+)
+
+CALL :PRINT_LINE "Start doxygen generation"
+"%DOXYGEN_CMD%"  "%CONFIG_FILE%"
+
+goto :ENDOFFILE
+
+REM -------------------------------------------------------------------------------
+:ENDOFFILE
+CALL :PRINT_LINE "   End of the configuration"
+CALL :LINE_BREAK
+PAUSE
+REM -------------------------------------------------------------------------------

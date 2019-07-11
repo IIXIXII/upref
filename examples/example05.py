@@ -31,16 +31,14 @@
 import upref
 
 
-###############################################################################
-def start():
+def save():
     my_data_user = {"configuration_ui":
-                    {"xml": "kjhlkjh"}}
+                    {"xml": "Some data"}}
     upref.save_data(my_data_user, "my_personnal_data")
 
-###############################################################################
 def read():
     default_data = {"configuration_ui":
-                    {"source": "default", "xml": "default"}}
+                    {"source": "default value", "xml": "default value"}}
     data = upref.load_data("my_personnal_data", default_data=default_data)
     print(data)
 
@@ -51,9 +49,8 @@ def read():
 def __main():
     upref.remove_pref("my_personnal_data")
     read()
-    start()
+    save()
     read()
-    # read()
 
 
 ###############################################################################

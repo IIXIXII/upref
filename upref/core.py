@@ -71,8 +71,8 @@ def load_conf(filename):
     filename = os.path.abspath(filename)
 
     if not os.path.isfile(filename):
-        logging.warning('The configuration file does not exists.')
-        logging.warning('The configuration filename is %s', filename)
+        logging.info('The configuration file does not exists.')
+        logging.info('The configuration filename is %s', filename)
         return result
 
     with open(filename, 'r') as ymlfile:
@@ -101,15 +101,6 @@ def save_conf(conf, filename):
 
 
 ###############################################################################
-# Read a conf file and return the dict
-###############################################################################
-def default_conf():
-    logging.debug('Load the default configuration.')
-    filename = os.path.join(__get_this_folder(), __DEFAULT_CONF_FILENAME__)
-    return load_conf(filename)
-
-
-###############################################################################
 # Read the current upref of the user
 #
 # @param name the name of the preference file (we add the extension .upref)
@@ -126,6 +117,15 @@ def upref_filename(name):
     filename = os.path.join(upref_folder, name + __EXT_FILENAME__)
 
     return filename
+
+
+###############################################################################
+# Read a conf file and return the dict
+###############################################################################
+def default_conf():
+    logging.debug('Load the default configuration.')
+    filename = os.path.join(__get_this_folder(), __DEFAULT_CONF_FILENAME__)
+    return load_conf(filename)
 
 
 ###############################################################################
@@ -209,19 +209,23 @@ def dict_merge(dct, merge_dct, add_keys=True):
 ###############################################################################
 # Get the value of preference or setting
 ###############################################################################
-def get_pref(data_description, name, interface="gui", force_renew=False):
+def get_pref(data_description, name, interface="gui", force_renew=False,
+             mandatory=True):
+    # if not mandatory, return the data without asking
+    if not mandatory:
+        return conv_description_to_raw(current_upref(name))
+
     # And finally merged with the data from the user preference
     current_data = dict_merge(data_description, current_upref(name))
     default = default_conf()
+
+    interact_ = gui if (interface == "gui") else tty
 
     not_all_values_are_set = not all_values_are_set(current_data)
     while not_all_values_are_set or force_renew:
         force_renew = False
         completed_data = dict_merge(default, current_data)
-        if interface == "gui":
-            completed_data = gui.get_data(completed_data)
-        else:
-            completed_data = tty.get_data(completed_data)
+        interact_.get_data(completed_data)
 
         for key in completed_data:
             if not key.endswith("__") and not key.startswith("__"):
@@ -232,10 +236,8 @@ def get_pref(data_description, name, interface="gui", force_renew=False):
         save_conf(current_data, upref_filename(name))
         not_all_values_are_set = not all_values_are_set(current_data)
         if not_all_values_are_set:
-            if interface == "gui":
-                gui.message("You need to fill all the data")
-            else:
-                tty.message("You need to fill all the data")
+            interact_.message(completed_data['__gui__']['not_complete_msg'],
+                              completed_data['__gui__']['not_complete_title'])
 
     return conv_description_to_raw(current_data)
 
@@ -289,6 +291,7 @@ def set_pref(data, name, data_description=None):
     data = dict_merge(data_description, conv_raw_to_description(data))
     save_conf(data, upref_filename(name))
 
+
 ###############################################################################
 # Remove the preference file
 ###############################################################################
@@ -297,6 +300,7 @@ def remove_pref(name):
     if os.path.isfile(filename):
         logging.debug('Remove the configuration file: %s', filename)
         os.remove(filename)
+
 
 ###############################################################################
 # Test the frozen situation of the executable

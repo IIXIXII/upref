@@ -1,26 +1,27 @@
 {
     "python.testing.unittestEnabled": false,
-    "python.testing.pyTestEnabled": true,
-    "python.testing.pyTestArgs": [
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": [
         "-c",
-        "${workspaceRoot}\\src\\python\\pytest.ini",
-        "--junitxml=${workspaceRoot}/src/python/test_result.xml",
+        "${workspaceRoot}/pytest.ini",
+        "--junitxml=${workspaceRoot}/tests/test_result.xml",
         "-v", // increase verbosity
         // "-l", // show locals in tracebacks
         // "-x", // exit instantly on first error or failed test
         // "--ff", // run all tests but run the last failures first
         // "--color=yes", // color terminal output (yes/no/auto)
-        "${workspaceRoot}/src/python/upref"
+        "${workspaceRoot}/"
     ],
     "python.linting.pep8Enabled": true,
     "python.linting.pep8Args": [
-        "--config=${workspaceRoot}/src/python/config/pep8.conf"
+        "--config=${workspaceRoot}/.config/pep8.conf"
     ],
+    "python.linting.pylintEnabled": true,
     "python.linting.pylintArgs": [
-        "--rcfile=${workspaceRoot}/src/python/config/pylint.conf"
+        "--rcfile=${workspaceRoot}/.config/pylint.conf"
     ],
     "python.formatting.autopep8Args": [
-        "--global-config=${workspaceRoot}/src/python/config/pep8.conf"
+        "--global-config=${workspaceRoot}/.config/pep8.conf"
     ],
     "editor.formatOnSave": true,
     "files.exclude": {
