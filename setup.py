@@ -107,6 +107,28 @@ class UploadCommand(Command):
         os.system('git tag v{0}'.format(mymodule.__version__))
         os.system('git push --tags')
         self.status('Change version number…')
+        # increase_version()
+
+        sys.exit()
+
+class IncreaseVersionCommand(Command):
+    """Support setup.py increaseversion."""
+
+    description = 'Increase the package version.'
+    user_options = []
+
+    @staticmethod
+    def status(msg):
+        print('>> {0}'.format(msg))
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        self.status('Change version number…')
         increase_version()
 
         sys.exit()
@@ -158,5 +180,6 @@ setup(
 
     cmdclass={
         'upload': UploadCommand,
+        'increaseversion': IncreaseVersionCommand,
     },
 )
