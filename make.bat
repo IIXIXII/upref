@@ -82,6 +82,7 @@ CALL :LINE_BREAK
 
 IF /I "%1" == "requirements"  GOTO :action_requirements
 IF /I "%1" == "requirements-dev"  GOTO :action_requirements_dev
+IF /I "%1" == "requirements-docs"  GOTO :action_requirements_docs
 IF /I "%1" == "install-editable"  GOTO :action_install_editable
 IF /I "%1" == "test"  GOTO :action_test
 IF /I "%1" == "doxygen"  GOTO :action_doxygen
@@ -103,6 +104,14 @@ CALL :PRINT_LINE "   Requirements python packages for devs"
 REM -------------------------------------------------------------------------------
 CALL :UPDATE_PIP
 pip install -r requirements-dev.txt
+goto :ENDOFFILE
+
+REM -------------------------------------------------------------------------------
+:action_requirements_docs
+CALL :PRINT_LINE "   Requirements python packages for devs" 
+REM -------------------------------------------------------------------------------
+CALL :UPDATE_PIP
+pip install -r requirements-docs.txt
 goto :ENDOFFILE
 
 REM -------------------------------------------------------------------------------
