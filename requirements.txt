@@ -25,6 +25,6 @@
 ###############################################################################
 pyyaml
 # wxpython for linux
--U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-14.04 wxPython ; sys_plateform=='linux'
+-f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-14.04 wxPython ; sys_platform=='linux'
 # wxpython for other than linux
-wxPython ; sys_plateform!='linux'
+wxPython ; sys_platform!='linux'
