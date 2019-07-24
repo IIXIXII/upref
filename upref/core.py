@@ -36,6 +36,7 @@ import collections
 import tempfile
 from copy import deepcopy
 import yaml
+import appdirs
 
 ###############################################################################
 # The filename of the default configuration
@@ -99,13 +100,7 @@ def save_conf(conf, filename):
 # @return the complet filename of the upref file
 ###############################################################################
 def upref_filename(name):
-    upref_folder = None
-    if sys.platform == "win32":
-        upref_folder = os.path.join(os.getenv("APPDATA"), __UPREF_FOLDER__)
-    elif sys.platform == "platform_value":
-        upref_folder = os.path.join(os.path.expanduser("~"),
-                                    ".local", "share", __UPREF_FOLDER__)
-
+    upref_folder = appdirs.user_data_dir(__UPREF_FOLDER__, roaming=True)
     filename = os.path.join(upref_folder, name + __EXT_FILENAME__)
 
     return filename
