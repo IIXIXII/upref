@@ -23,8 +23,8 @@
 ###############################################################################
 # All dependency of the project
 ###############################################################################
+pyyaml
 # wxpython for linux
--U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-14.04 wxPython ; sys_plateform=='linux
+-U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-14.04 wxPython ; sys_plateform=='linux'
 # wxpython for other than linux
 wxPython ; sys_plateform!='linux'
-pyyaml
