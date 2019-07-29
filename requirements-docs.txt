@@ -24,6 +24,7 @@
 # All dependency of the project for devs
 ###############################################################################
 pyyaml
+appdirs
 sphinx
 sphinx_rtd_theme
 m2r

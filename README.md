@@ -4,12 +4,12 @@ upref 🐸
 Upref is a small python module to grab and save some user data like login, password, url (mainly string data). After some projects, I want a simple method to find the right login and url from the user and save it in the personnal data of the user.
 
 [![Wheel Status](https://img.shields.io/pypi/wheel/upref.svg?style=flat)](https://pypi.python.org/pypi/upref/)
-[![Latest Version](https://img.shields.io/pypi/v/upref.svg)](https://pypi.python.org/pypi/upref/)
-[![Total download](https://img.shields.io/github/downloads/IIXIXII/upref/total.svg)](https://github.com/IIXIXII/upref/releases)
-[![License](https://img.shields.io/github/license/IIXIXII/upref.svg)](https://github.com/IIXIXII/upref/blob/master/LICENSE.md)
-[![Build Status](https://img.shields.io/travis/IIXIXII/upref/master.svg?style=plastic)](https://travis-ci.org/IIXIXII/upref)
-[![Documentation Status](https://readthedocs.org/projects/upref/badge/?version=latest)](https://upref.readthedocs.io/en/latest/?badge=latest)
-[![Coverage Status](https://coveralls.io/repos/github/IIXIXII/upref/badge.svg?branch=master)](https://coveralls.io/github/IIXIXII/upref?branch=master)
+[![Latest Version](https://img.shields.io/pypi/v/upref.svg?style=flat)](https://pypi.python.org/pypi/upref/)
+[![Total download](https://img.shields.io/github/downloads/IIXIXII/upref/total.svg?style=flat)](https://github.com/IIXIXII/upref/releases)
+[![License](https://img.shields.io/github/license/IIXIXII/upref.svg?style=flat)](https://github.com/IIXIXII/upref/blob/master/LICENSE.md)
+[![Build Status](https://img.shields.io/travis/IIXIXII/upref/master.svg?style=flat)](https://travis-ci.org/IIXIXII/upref)
+[![Documentation Status](https://img.shields.io/readthedocs/upref.svg?style=flat)](https://upref.readthedocs.io/en/latest/?badge=latest)
+[![Coverage Status](https://img.shields.io/coveralls/github/IIXIXII/upref/master.svg?style=flat)](https://coveralls.io/github/IIXIXII/upref?branch=master)
 
 Installation
 ------------
