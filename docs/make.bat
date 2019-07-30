@@ -1,5 +1,3 @@
-@ECHO OFF
-
 pushd %~dp0
 
 REM Command file for Sphinx documentation
@@ -25,6 +23,7 @@ if errorlevel 9009 (
 	exit /b 1
 )
 
+ECHO %SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 %SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 goto end
 
