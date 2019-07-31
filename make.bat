@@ -87,6 +87,10 @@ IF /I "%1" == "install-editable"   GOTO :action_install_editable
 IF /I "%1" == "test"               GOTO :action_test
 IF /I "%1" == "doxygen"            GOTO :action_doxygen
 IF /I "%1" == "sphinx"             GOTO :action_sphinx
+IF /I "%1" == "build"              GOTO :action_build
+IF /I "%1" == "increase_version"   GOTO :action_increaseversion
+IF /I "%1" == "upload"             GOTO :action_upload
+IF /I "%1" == "tag_version"        GOTO :action_tag_version
 
 CALL :PRINT_LINE "   '%1' is not an action. Can not find the right action." 
 GOTO :ENDOFFILE
@@ -175,6 +179,34 @@ set BUILDDIR=build
 
 %SPHINXBUILD% -M html %SOURCEDIR% %BUILDDIR%
 
+goto :ENDOFFILE
+
+REM -------------------------------------------------------------------------------
+:action_build
+CALL :PRINT_LINE "   Build" 
+REM -------------------------------------------------------------------------------
+python setup.py sdist bdist_wheel --universal
+goto :ENDOFFILE
+
+REM -------------------------------------------------------------------------------
+:action_increaseversion
+CALL :PRINT_LINE "   Increase version" 
+REM -------------------------------------------------------------------------------
+python setup.py increaseversion
+goto :ENDOFFILE
+
+REM -------------------------------------------------------------------------------
+:action_upload
+CALL :PRINT_LINE "   Upload package" 
+REM -------------------------------------------------------------------------------
+python setup.py upload
+goto :ENDOFFILE
+
+REM -------------------------------------------------------------------------------
+:action_tag_version
+CALL :PRINT_LINE "   Tag version" 
+REM -------------------------------------------------------------------------------
+python setup.py tagversion
 goto :ENDOFFILE
 
 REM -------------------------------------------------------------------------------

@@ -50,6 +50,13 @@ try:
 except FileNotFoundError:
     __long_description__ = mymodule.__doc__
 
+
+# -------------------------------------------------------------------------------
+# Increase the version number
+# -------------------------------------------------------------------------------
+def print_status(msg):
+    print('>> {0}'.format(msg))
+
 # -------------------------------------------------------------------------------
 # Increase the version number
 # -------------------------------------------------------------------------------
@@ -63,6 +70,7 @@ def increase_version():
     new_version = (current_version[0],
                    current_version[1],
                    current_version[2] + 1)
+    print_status("New version = %s.%s.%s" % new_version)
 
     with open(os.path.join(__root__, mymodule.__name__,
                            'version.py'), "w") as ver:
@@ -81,7 +89,7 @@ class UploadCommand(Command):
 
     @staticmethod
     def status(msg):
-        print('>> {0}'.format(msg))
+        print_status(msg)
 
     def initialize_options(self):
         pass
@@ -103,12 +111,6 @@ class UploadCommand(Command):
         self.status('Uploading the package to PyPI via Twine…')
         os.system('twine upload dist/*')
 
-        self.status('Pushing git tags…')
-        os.system('git tag v{0}'.format(mymodule.__version__))
-        os.system('git push --tags')
-        self.status('Change version number…')
-        # increase_version()
-
         sys.exit()
 
 class IncreaseVersionCommand(Command):
@@ -119,7 +121,7 @@ class IncreaseVersionCommand(Command):
 
     @staticmethod
     def status(msg):
-        print('>> {0}'.format(msg))
+        print_status(msg)
 
     def initialize_options(self):
         pass
@@ -130,7 +132,30 @@ class IncreaseVersionCommand(Command):
     def run(self):
         self.status('Change version number…')
         increase_version()
+        sys.exit()
 
+
+class TagVersionCommand(Command):
+    """Support setup.py increaseversion."""
+
+    description = 'Increase the package version.'
+    user_options = []
+
+    @staticmethod
+    def status(msg):
+        print_status(msg)
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        self.status('Tag the version number {0}'.format(mymodule.__version__))
+        self.status('Pushing git tags…')
+        os.system('git tag v{0}'.format(mymodule.__version__))
+        os.system('git push --tags')
         sys.exit()
 
 
@@ -181,5 +206,6 @@ setup(
     cmdclass={
         'upload': UploadCommand,
         'increaseversion': IncreaseVersionCommand,
+        'tagversion': TagVersionCommand,
     },
 )
