@@ -80,12 +80,13 @@ cd %MYPATH%
 CALL :PRINT_LINE "    MYPATH=%MYPATH%" 
 CALL :LINE_BREAK
 
-IF /I "%1" == "requirements"  GOTO :action_requirements
-IF /I "%1" == "requirements-dev"  GOTO :action_requirements_dev
+IF /I "%1" == "requirements"       GOTO :action_requirements
+IF /I "%1" == "requirements-dev"   GOTO :action_requirements_dev
 IF /I "%1" == "requirements-docs"  GOTO :action_requirements_docs
-IF /I "%1" == "install-editable"  GOTO :action_install_editable
-IF /I "%1" == "test"  GOTO :action_test
-IF /I "%1" == "doxygen"  GOTO :action_doxygen
+IF /I "%1" == "install-editable"   GOTO :action_install_editable
+IF /I "%1" == "test"               GOTO :action_test
+IF /I "%1" == "doxygen"            GOTO :action_doxygen
+IF /I "%1" == "sphinx"             GOTO :action_sphinx
 
 CALL :PRINT_LINE "   '%1' is not an action. Can not find the right action." 
 GOTO :ENDOFFILE
@@ -161,6 +162,18 @@ IF EXIST "%CONFIG_FILE%" (
 
 CALL :PRINT_LINE "Start doxygen generation"
 "%DOXYGEN_CMD%"  "%CONFIG_FILE%"
+
+goto :ENDOFFILE
+
+REM -------------------------------------------------------------------------------
+:action_sphinx
+CALL :PRINT_LINE "   Launch sphinx documentation" 
+REM -------------------------------------------------------------------------------
+set SPHINXBUILD=sphinx-build
+set SOURCEDIR=docs
+set BUILDDIR=build
+
+%SPHINXBUILD% -M html %SOURCEDIR% %BUILDDIR%
 
 goto :ENDOFFILE
 
