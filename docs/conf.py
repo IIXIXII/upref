@@ -30,6 +30,7 @@ import os
 import sys
 import recommonmark
 from recommonmark.transform import AutoStructify
+import textwrap
 import upref as mymodule
 
 sys.path.insert(0, os.path.abspath('..'))
@@ -48,27 +49,58 @@ language = 'en'
 html_static_path = ['layout']
 templates_path = ['_templates']
 exclude_patterns = []
-extensions = ['m2r']
+extensions = ['m2r',
+              'breathe',
+              'exhale',
+              ]
 source_suffix = ['.rst', '.md']
 
 master_doc = 'index'
 
+
+# -- Setup the breathe extension ---------------------------------------------
+breathe_projects = {
+    "UPref": "./doxyoutput/xml"
+}
+breathe_default_project = "UPref"
+
+# -- Setup the exhale extension ---------------------------------------------
+exhale_args = {
+    # These arguments are required
+    "containmentFolder": "./api",
+    "rootFileName": "library_root.rst",
+    "rootFileTitle": "Library API",
+    "doxygenStripFromPath": "..",
+    # Suggested optional arguments
+    "createTreeView": True,
+    "treeViewIsBootstrap": True,
+    # TIP: if using the sphinx-bootstrap-theme, you need
+    # "treeViewIsBootstrap": True,
+    "exhaleExecutesDoxygen": True,
+    "exhaleDoxygenStdin": textwrap.dedent('''
+        INPUT = ../upref
+        EXCLUDE_SYMBOLS  = *test_* \
+                         __main \
+                         __set_logging_system \
+                         __get_this_filename \
+                         __get_this_folder \
+                         is_frozen \
+                         __launch_test
+    ''')
+}
+
+
 # -- Options for HTML output -------------------------------------------------
 pygments_style = 'friendly'
 
-# -- Options for HTML output --------------------------------------------------
-try:
+# -- Options for HTML output -------------------------------------------------
+# on_rtd is whether we are on readthedocs.org,
+# this line of code grabbed from docs.readthedocs.org
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+
+if not on_rtd:  # only import and set the theme if we're building docs locally
     import sphinx_rtd_theme
     html_theme = 'sphinx_rtd_theme'
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-
-except ImportError:
+else:
     html_theme = 'default'
-
-
-# def setup(app):
-#     app.add_config_value('recommonmark_config', {
-#         'url_resolver': lambda url: github_doc_root + url,
-#         'auto_toc_tree_section': 'Contents',
-#     }, True)
-#     app.add_transform(AutoStructify)

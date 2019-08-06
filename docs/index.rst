@@ -7,6 +7,8 @@ upref's documentation
 
    readme_link
    license_link
+   api/library_root
+   api/unabridged_api
 
 Indices and tables
 ==================
