@@ -80,6 +80,7 @@ cd %MYPATH%
 CALL :PRINT_LINE "    MYPATH=%MYPATH%" 
 CALL :LINE_BREAK
 
+IF /I "%1" == "clean"              GOTO :action_clean
 IF /I "%1" == "requirements"       GOTO :action_requirements
 IF /I "%1" == "requirements-dev"   GOTO :action_requirements_dev
 IF /I "%1" == "requirements-docs"  GOTO :action_requirements_docs
@@ -94,6 +95,14 @@ IF /I "%1" == "tag_version"        GOTO :action_tag_version
 
 CALL :PRINT_LINE "   '%1' is not an action. Can not find the right action." 
 GOTO :ENDOFFILE
+
+REM -------------------------------------------------------------------------------
+:action_clean
+CALL :PRINT_LINE "   Clean the folder" 
+REM -------------------------------------------------------------------------------
+CALL :UPDATE_PIP
+pip install -r requirements.txt
+goto :ENDOFFILE
 
 REM -------------------------------------------------------------------------------
 :action_requirements
