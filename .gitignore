@@ -29,8 +29,8 @@ __pycache__
 /examples/output*
 *.exe
 *.chm
-/docs/html
-/docs/html_dox
+/docs/api
+/docs/doxyoutput
 test*.xml
 *.bak
 /docs/build

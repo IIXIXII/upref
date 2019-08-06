@@ -73,22 +73,27 @@ exhale_args = {
     "doxygenStripFromPath": "..",
     # Suggested optional arguments
     "createTreeView": True,
-    "treeViewIsBootstrap": True,
     # TIP: if using the sphinx-bootstrap-theme, you need
     # "treeViewIsBootstrap": True,
     "exhaleExecutesDoxygen": True,
-    "exhaleDoxygenStdin": textwrap.dedent('''
-        INPUT = ../upref
-        EXCLUDE_SYMBOLS  = *test_* \
-                         __main \
-                         __set_logging_system \
-                         __get_this_filename \
-                         __get_this_folder \
-                         is_frozen \
-                         __launch_test
-    ''')
+    # "exhaleDoxygenStdin": textwrap.dedent('''
+    #     INPUT = ../upref
+    #     EXCLUDE_SYMBOLS  = *test_* \
+    #                      __main \
+    #                      __set_logging_system \
+    #                      __get_this_filename \
+    #                      __get_this_folder \
+    #                      is_frozen \
+    #                      __launch_test
+    # ''')
+    "exhaleDoxygenStdin": "INPUT = ../upref"
 }
 
+# Tell sphinx what the primary language being documented is.
+primary_domain = 'py'
+
+# Tell sphinx what the pygments highlight language should be.
+highlight_language = 'python'
 
 # -- Options for HTML output -------------------------------------------------
 pygments_style = 'friendly'
