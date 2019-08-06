@@ -5,7 +5,6 @@ Upref is a small python module to grab and save some user data like login, passw
 
 [![Wheel Status](https://img.shields.io/pypi/wheel/upref.svg?style=flat)](https://pypi.python.org/pypi/upref/)
 [![Latest Version](https://img.shields.io/pypi/v/upref.svg?style=flat)](https://pypi.python.org/pypi/upref/)
-[![Total download](https://img.shields.io/github/downloads/IIXIXII/upref/total.svg?style=flat)](https://github.com/IIXIXII/upref/releases)
 [![License](https://img.shields.io/github/license/IIXIXII/upref.svg?style=flat)](https://github.com/IIXIXII/upref/blob/master/LICENSE.md)
 [![Build Status](https://img.shields.io/travis/IIXIXII/upref/master.svg?style=flat)](https://travis-ci.org/IIXIXII/upref)
 [![Documentation Status](https://img.shields.io/readthedocs/upref.svg?style=flat)](https://upref.readthedocs.io/en/latest/?badge=latest)
