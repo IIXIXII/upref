@@ -60,7 +60,7 @@ master_doc = 'index'
 
 # -- Setup the breathe extension ---------------------------------------------
 breathe_projects = {
-    "UPref": "./doxyoutput/xml"
+    "UPref": "../build/doxyoutput/xml"
 }
 breathe_default_project = "UPref"
 
