@@ -367,7 +367,8 @@ def __main():
     logging.info('The Python version is %s.%s.%s',
                  sys.version_info[0], sys.version_info[1], sys.version_info[2])
 
-    ex_conf = load_conf(os.path.join(__get_this_folder(), "example1.conf"))
+    ex_conf = load_conf(os.path.join(__get_this_folder(), "..", "examples",
+                                     "example1.conf"))
     data_ex1 = get_pref(ex_conf, "example1")
     print("Ex1: url=%s" % data_ex1['url'])
     remove_pref("example1")
