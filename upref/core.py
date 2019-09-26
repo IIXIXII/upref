@@ -367,11 +367,15 @@ def __main():
     logging.info('The Python version is %s.%s.%s',
                  sys.version_info[0], sys.version_info[1], sys.version_info[2])
 
-    ex_conf = load_conf(os.path.join(__get_this_folder(), "example1.conf"))
-    data_ex1 = get_pref(ex_conf, "example1")
-    print("Ex1: url=%s" % data_ex1['url'])
-    remove_pref("example1")
-    data_ex1 = get_pref(ex_conf, "example1")
+    ex1_filename = os.path.join(__get_this_folder(), "..", "examples",
+                                "example01.conf")
+    print("Filename = %s" % ex1_filename)
+    ex_conf = load_conf(ex1_filename)
+    print("conf loaded = %s" % ex_conf)
+    data_ex1 = get_pref(ex_conf, "core_example01")
+    print("url=%s" % data_ex1['url'])
+    remove_pref("core_example01")
+    data_ex1 = get_pref(ex_conf, "core_example01")
     print("Ex1: url=%s" % data_ex1['url'])
 
     logging.info('Finished')
