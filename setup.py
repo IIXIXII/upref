@@ -174,6 +174,8 @@ setup(
 
     url='https://github.com/IIXIXII/upref',
 
+    install_requires=['pyyaml', 'appdirs'],
+
     # https://pypi.python.org/pypi?%3Aaction=list_classifiers.
     classifiers=[
         "Programming Language :: Python",
