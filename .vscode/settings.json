@@ -12,8 +12,8 @@
         // "--color=yes", // color terminal output (yes/no/auto)
         "${workspaceRoot}/"
     ],
-    "python.linting.pep8Enabled": true,
-    "python.linting.pep8Args": [
+    "python.linting.pycodestyleEnabled": true,
+    "python.linting.pycodestyleArgs": [
         "--config=${workspaceRoot}/.config/pep8.conf"
     ],
     "python.linting.pylintEnabled": true,
