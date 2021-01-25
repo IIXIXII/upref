@@ -74,7 +74,7 @@ def get_widget(parent, data):
 
     if 'value' in data and data['value'] is not None:
         result['value'].SetValue(data['value'])
-    sizer.Add(result['value'], 0, wx.ALL | wx.ALIGN_RIGHT | wx.EXPAND, 2)
+    sizer.Add(result['value'], 0, wx.ALL | wx.EXPAND, 2)
 
     result['sizer'].Add(sizer, 1, wx.ALL | wx.EXPAND, 2)
 
