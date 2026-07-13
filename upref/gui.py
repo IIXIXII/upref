@@ -1,294 +1,211 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-###############################################################################
-#
-# Copyright (c) 2018 Florent TOURNOIS
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-#
-###############################################################################
+"""Provide the optional wxPython prompt implementation.
 
-###############################################################################
-# wxPython input
-###############################################################################
+Importing this module does not import wxPython. The optional dependency is
+loaded only when :class:`GuiPrompter` is instantiated. A prompter reuses the
+active wx application when one exists; otherwise it creates a private
+``wx.App`` and destroys only that application when closed.
 
-import logging
-import sys
-import os
-import os.path
-import tempfile
-import wx
+Secret dialogs use wxPython's password-entry style and are never prefilled with
+the current value. This prevents ordinary visual disclosure, not access to the
+plaintext returned by the dialog, and provides no encryption for subsequent
+persistence.
+"""
 
-__all__ = ['get_data']
+from __future__ import annotations
 
-###############################################################################
-# Build a widget to collect the data
-###############################################################################
-def get_widget_style(style):
-    style = style.strip().upper()
-    if style == "PASSWORD" or style == "PASSWD" or style == "PASS":
-        return wx.TE_PASSWORD
+from importlib import import_module
+from types import ModuleType
+from typing import TYPE_CHECKING, Any
 
-    return None
+from ._types import ConfigValue
+from .errors import PromptUnavailableError
 
-###############################################################################
-# Build a widget to collect the data
-###############################################################################
-def get_widget(parent, data):
-    result = {}
-    label = ""
-    if 'label' in data:
-        label = data['label']
-
-    result['label'] = wx.StaticBox(parent, wx.ID_ANY, label)
-    result['sizer'] = wx.StaticBoxSizer(result['label'], wx.HORIZONTAL)
-
-    sizer = wx.BoxSizer(wx.VERTICAL)
-    if 'description' in data:
-        result['description'] = wx.StaticText(
-            result['label'], label=data['description'])
-        sizer.Add(result['description'],
-                  0, wx.ALL | wx.ALIGN_LEFT | wx.EXPAND, 2)
-
-    if 'type' in data:
-        result['value'] = wx.TextCtrl(result['label'],
-                                      style=get_widget_style(data['type']))
-    else:
-        result['value'] = wx.TextCtrl(result['label'])
-
-    if 'value' in data and data['value'] is not None:
-        result['value'].SetValue(data['value'])
-    sizer.Add(result['value'], 0, wx.ALL | wx.EXPAND, 2)
-
-    result['sizer'].Add(sizer, 1, wx.ALL | wx.EXPAND, 2)
-
-    return result
+if TYPE_CHECKING:
+    from .prompt import Field
 
 
-###############################################################################
-# Main dialog in wxPython
-###############################################################################
-class PrefDialog(wx.Dialog):
-    def __init__(self, parent, data):
-        super(PrefDialog, self).__init__(
-            parent,
-            style=wx.DEFAULT_DIALOG_STYLE)
+class GuiPrompter:
+    """Collect one value at a time with wxPython modal dialogs.
 
-        self.data_description = data
-        if '__gui__' not in self.data_description:
-            self.data_description['__gui__'] = {}
-        self.init_ui()
+    Instances can be closed explicitly or used as context managers. Closing is
+    idempotent and destroys a ``wx.App`` only when this instance created it.
+    An application that already existed at construction remains owned by its
+    original caller. Once closed, the prompter cannot display new dialogs.
+    """
 
-    def init_ui(self):
-        if 'title' in self.data_description['__gui__']:
-            self.SetTitle(self.data_description['__gui__']['title'])
+    def __init__(self, title: str = "Preferences", parent: Any = None) -> None:
+        """Initialize wxPython and prepare a modal-dialog prompter.
 
-        if 'icon' in self.data_description['__gui__']:
-            data_ico = self.data_description['__gui__']['icon']
-            ico_locations = []
-            ico_locations.append(data_ico)
-            ico_locations.append(os.path.abspath(data_ico))
-            loca_path = os.path.split(__file__)[0]
-            ico_locations.append(os.path.join(loca_path, data_ico))
-            loca_path = os.path.split(sys.executable)[0]
-            ico_locations.append(os.path.join(loca_path, data_ico))
+        Args:
+            title: Window title used by text-entry and error dialogs.
+            parent: Optional wx window that owns the dialogs. ``None`` creates
+                top-level dialogs according to wxPython's normal behavior.
 
-            for loc in ico_locations:
-                if os.path.isfile(loc):
-                    self.SetIcon(wx.Icon(loc))
-                    break
+        Returns:
+            None.
 
-        self.panel = wx.Panel(self)
-        self.data_widget = {}
+        Raises:
+            PromptUnavailableError: If wxPython is not installed or a wx
+                application cannot be initialized.
+        """
+        try:
+            wx = import_module("wx")
+        except Exception as error:
+            raise PromptUnavailableError(
+                "wxPython could not be imported; install or repair the 'gui' extra"
+            ) from error
 
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        for key in self.data_description:
-            if not key.endswith("__") and not key.startswith("__"):
-                self.data_widget[key] = get_widget(self.panel,
-                                                   self.data_description[key])
-                sizer.Add(self.data_widget[key]['sizer'],
-                          0, wx.ALL | wx.EXPAND, 5)
+        self._wx: ModuleType = wx
+        self._parent = parent
+        self._app: Any = None
+        self._closed = False
+        self.title = title
 
-        # button
-        button_label = "OK"
-        if 'button_label' in self.data_description['__gui__']:
-            button_label = self.data_description['__gui__']['button_label']
+        try:
+            get_app = getattr(wx, "GetApp", None)
+            existing_app = get_app() if get_app is not None else None
+            if existing_app is None:
+                self._app = wx.App(False)
+        except Exception as error:
+            raise PromptUnavailableError(
+                "wxPython is installed but its GUI could not be initialized"
+            ) from error
 
-        button = wx.Button(self.panel, wx.ID_ANY, label=button_label)
-        button.SetDefault()
-        button.Bind(wx.EVT_BUTTON, self.on_ok)
-        self.Bind(wx.EVT_CLOSE, self.on_close)
+    def ask(
+        self,
+        name: str,
+        field: Field,
+        current: ConfigValue,
+    ) -> str | None:
+        """Show a modal text-entry dialog for one field.
 
-        sizer.Add(button, 0, wx.ALL | wx.ALIGN_RIGHT, 12)
-        sizer.SetSizeHints(self)
-        self.panel.SetAutoLayout(True)
-        self.panel.SetSizerAndFit(sizer)
-        self.panel.Layout()
-        self.Centre()
+        Ordinary fields are prefilled with a non-``None`` current value.
+        Secret fields use wxPython's password style and deliberately start
+        empty, so the current secret is neither displayed nor copied into the
+        widget. Any entered secret is still returned as plaintext. The dialog
+        is destroyed after confirmation or cancellation and when displaying or
+        reading the constructed dialog raises an error.
 
-    def on_ok(self, event):
-        del event
-        logging.info('Read the new value')
-        for key in self.data_widget:
-            value = self.data_widget[key]['value'].GetValue()
-            if value is not None and len(value) > 0:
-                self.data_description[key]['value'] = value
-        self.Destroy()
+        Args:
+            name: Configuration key, used as the label when ``field.label`` is
+                empty.
+            field: Presentation metadata, including description and secret
+                handling.
+            current: Existing value used as the default for an ordinary field,
+                or ``None`` when unavailable.
 
-    def on_close(self, event):
-        del event
-        logging.info('No new value...')
-        self.Destroy()
+        Returns:
+            The raw dialog text when the user confirms, including an empty
+            string, or ``None`` when the dialog is cancelled or dismissed.
 
-###############################################################################
-# Get the data from the user
-###############################################################################
-def get_data(data_description):
-    app = wx.App()
-    dialog = PrefDialog(parent=None, data=data_description)
-    dialog.Show()
-    app.MainLoop()
-    app.Destroy()
-    return dialog.data_description
+        Raises:
+            RuntimeError: If the prompter has already been closed.
+            Exception: Errors raised by wxPython while constructing, showing,
+                reading, or destroying the dialog propagate unchanged.
+        """
+        if self._closed:
+            raise RuntimeError("GuiPrompter is closed")
 
+        wx = self._wx
+        label = field.label or name
+        message = label
+        if field.description:
+            message = f"{label}\n\n{field.description}"
 
-###############################################################################
-# Display a message
-###############################################################################
-def message(msg_txt, title):
-    app = wx.App()
-    wx.MessageBox(msg_txt, title, wx.OK | wx.ICON_INFORMATION)
-    app.Destroy()
+        default_value = ""
+        if current is not None and not field.secret:
+            default_value = str(current)
 
+        style = wx.OK | wx.CANCEL
+        if field.secret:
+            style |= wx.TE_PASSWORD
 
-###############################################################################
-# Test the frozen situation of the executable
-###############################################################################
-def is_frozen():
-    return getattr(sys, 'frozen', False)
+        dialog = wx.TextEntryDialog(
+            self._parent,
+            message,
+            self.title,
+            default_value,
+            style,
+        )
+        try:
+            if dialog.ShowModal() == wx.ID_OK:
+                return str(dialog.GetValue())
+            return None
+        finally:
+            dialog.Destroy()
 
-###############################################################################
-# Find the filename of this file (depend on the frozen or not)
-# This function return the filename of this script.
-# The function is complex for the frozen system
-#
-# @return the folder of THIS script.
-###############################################################################
-def __get_this_folder():
-    return os.path.split(os.path.abspath(os.path.realpath(
-        __get_this_filename())))[0]
+    def show_error(self, message: str) -> None:
+        """Display a modal conversion or validation error.
 
+        Args:
+            message: Human-readable error supplied by the collection layer.
 
-###############################################################################
-# Find the filename of this file (depend on the frozen or not)
-# This function return the filename of this script.
-# The function is complex for the frozen system
-#
-# @return the filename of THIS script.
-###############################################################################
-def __get_this_filename():
-    result = ""
+        Returns:
+            None.
 
-    if is_frozen():
-        # frozen
-        result = sys.executable
-    else:
-        # unfrozen
-        result = __file__
+        Raises:
+            RuntimeError: If the prompter has already been closed.
+            Exception: Errors raised by ``wx.MessageBox`` propagate unchanged.
+        """
+        if self._closed:
+            raise RuntimeError("GuiPrompter is closed")
+        wx = self._wx
+        wx.MessageBox(
+            message,
+            self.title,
+            wx.OK | wx.ICON_ERROR,
+            self._parent,
+        )
 
-    return result
+    def close(self) -> None:
+        """Release GUI resources owned by this prompter.
 
+        Closing is idempotent. If construction created a private ``wx.App``,
+        its ``Destroy`` method is called when available. An application that
+        predated this prompter is never destroyed.
 
-###############################################################################
-# Set up the logging system
-###############################################################################
-def __set_logging_system():
-    log_filename = os.path.splitext(os.path.abspath(
-        os.path.realpath(__get_this_filename())))[0] + '.log'
+        Returns:
+            None.
 
-    if is_frozen():
-        log_filename = os.path.abspath(os.path.join(
-            tempfile.gettempdir(),
-            os.path.basename(__get_this_filename()) + '.log'))
+        Raises:
+            Exception: An error raised by the owned ``wx.App.Destroy`` method
+                propagates. The prompter remains marked as closed.
+        """
+        if self._closed:
+            return
+        self._closed = True
+        if self._app is not None:
+            destroy = getattr(self._app, "Destroy", None)
+            if destroy is not None:
+                destroy()
+            self._app = None
 
-    logging.basicConfig(filename=log_filename, level=logging.DEBUG,
-                        format='%(asctime)s: %(message)s',
-                        datefmt='%m/%d/%Y %I:%M:%S %p')
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-    # set a format which is simpler for console use
-    formatter = logging.Formatter('%(asctime)s: %(levelname)-8s %(message)s')
-    # tell the handler to use this format
-    console.setFormatter(formatter)
-    # add the handler to the root logger
-    logging.getLogger('').addHandler(console)
+    def __enter__(self) -> GuiPrompter:
+        """Enter a context manager without changing GUI ownership.
 
+        Entering does not initialize another application or reopen a prompter
+        that was already closed.
 
-###############################################################################
-# Main script call only if this script is runned directly
-###############################################################################
-def __main():
-    # ------------------------------------
-    logging.info('Started %s', __get_this_filename())
-    logging.info('The Python version is %s.%s.%s',
-                 sys.version_info[0], sys.version_info[1], sys.version_info[2])
+        Returns:
+            This prompter instance.
+        """
+        return self
 
-    conf = {
-        '__gui__': {
-            'title': 'The title here',
-            'icon': 'tower.ico',
-            'button_label': 'Cool baby',
-        },
-        'url': {
-            'label': 'URL',
-            'description': 'Could you give me a coffee not an URL',
-        },
-        'login': {
-            'label': 'Login',
-            'description': 'Could you give me a coffee again',
-        },
-        'logsdfin11': {
-            'label': 'Login new one',
-            'description': 'Could you give me a coffee black',
-        },
-        'logqqqin13': {
-            'label': 'Logoff',
-            'description': 'Could you give me a\nTEA',
-        },
-        'loginfsdf12': {
-            'label': 'Password',
-            'description': 'Could you give me a coffee again',
-            'value': "lkjhlkhj",
-            'type': "pass",
-        },
-    }
+    def __exit__(self, *exc_info: object) -> None:
+        """Close the prompter when leaving a context manager.
 
-    get_data(conf)
+        Args:
+            *exc_info: Exception details supplied by the context-management
+                protocol. They are not inspected or suppressed.
 
-    logging.info('Finished')
-    # ------------------------------------
+        Returns:
+            None. An exception from the managed block normally propagates.
+
+        Raises:
+            Exception: An exception from :meth:`close` propagates and can
+                replace an active exception from the managed block.
+        """
+        self.close()
 
 
-###############################################################################
-# Call main function if the script is main
-# Exec only if this script is runned directly
-###############################################################################
-if __name__ == '__main__':
-    __set_logging_system()
-    __main()
+__all__ = ["GuiPrompter"]

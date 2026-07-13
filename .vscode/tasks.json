@@ -1,71 +1,152 @@
 {
-    // See https://go.microsoft.com/fwlink/?LinkId=733558
-    // for the documentation about the tasks.json format
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Generate documentation",
-            "type": "shell",
-            "command": "doxygen.exe",
+            "label": "Setup",
+            "type": "process",
+            "command": "powershell.exe",
             "args": [
-                "config_doc.dox"
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/scripts/bootstrap.ps1"
             ],
             "options": {
-                "cwd": "${workspaceRoot}/docs/"
+                "cwd": "${workspaceFolder}"
             },
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "always",
-                "panel": "new"
-            }
+            "problemMatcher": []
         },
         {
-            "label": "Generate binary",
-            "type": "shell",
-            "command": "python",
+            "label": "Test",
+            "type": "process",
+            "command": "${workspaceFolder}/.venv/Scripts/python.exe",
             "args": [
-                "mdtoolsmain_setup.py",
-                "build"
+                "-m",
+                "pytest",
+                "--basetemp=.pytest_tmp",
+                "tests"
             ],
             "options": {
-                "cwd": "${workspaceRoot}/src/python/"
+                "cwd": "${workspaceFolder}"
             },
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "always",
-                "panel": "new"
-            }
+            "group": "test",
+            "problemMatcher": []
         },
         {
-            "label": "Run Python",
+            "label": "Ruff check",
+            "type": "process",
+            "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+            "args": [
+                "-m",
+                "ruff",
+                "check",
+                "upref",
+                "tests",
+                "examples",
+                "scripts",
+                "docs/conf.py"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Ruff format check",
+            "type": "process",
+            "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+            "args": [
+                "-m",
+                "ruff",
+                "format",
+                "--check",
+                "upref",
+                "tests",
+                "examples",
+                "scripts",
+                "docs/conf.py"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Mypy",
+            "type": "process",
+            "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+            "args": [
+                "-m",
+                "mypy",
+                "upref",
+                "examples"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Check",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Ruff format check",
+                "Ruff check",
+                "Mypy",
+                "Test"
+            ],
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "command": "${config:python.pythonPath}python.exe",
-            "type": "shell",
+            "problemMatcher": []
+        },
+        {
+            "label": "Docs (Sphinx)",
+            "type": "process",
+            "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+            "args": [
+                "-m",
+                "sphinx",
+                "-E",
+                "-a",
+                "-W",
+                "--keep-going",
+                "-b",
+                "html",
+                "docs",
+                "docs/_build/html"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Build",
+            "type": "process",
+            "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+            "args": [
+                "-m",
+                "build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run current file",
+            "type": "process",
+            "command": "${workspaceFolder}/.venv/Scripts/python.exe",
             "args": [
                 "${file}"
             ],
-            "presentation": {
-                "reveal": "always",
-                "panel": "new"
+            "options": {
+                "cwd": "${workspaceFolder}"
             },
-            "problemMatcher": {
-                "fileLocation": "absolute",
-                "pattern": [
-                    {
-                        "regexp": "^\\s+File \"(.*?)\", line ([0-9]+)[,]?.+?$",
-                        "line": 2,
-                        "file": 1,
-                        "message": 0
-                    },
-                    {
-                        "regexp": "^\\s+(.+?)$",
-                        "code": 1
-                    }
-                ]
-            }
+            "problemMatcher": []
         }
     ]
 }

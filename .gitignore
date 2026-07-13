@@ -1,4 +1,4 @@
-###############################################################################
+# -----------------------------------------------------------------------------
 # 
 # Copyright (c) 2018 Florent TOURNOIS
 # 
@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 # 
-###############################################################################
+# -----------------------------------------------------------------------------
 /distribution
 *.pyc
 *.log
@@ -121,12 +121,18 @@ celerybeat-schedule
 
 # Environments
 .env
-.venv
+/.venv/
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Ruff
+.ruff_cache/
+
+# Local pytest temporary directories
+/.pytest_tmp*/
 
 # Spyder project settings
 .spyderproject

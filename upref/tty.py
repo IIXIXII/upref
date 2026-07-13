@@ -1,191 +1,120 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-###############################################################################
-#
-# Copyright (c) 2018 Florent TOURNOIS
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-#
-###############################################################################
+"""Provide the dependency-free terminal prompt implementation.
 
-###############################################################################
-# wxPython input for preference
-###############################################################################
+:class:`TTYPrompter` writes field context to a configurable output function and
+reads raw text through :func:`input` or :func:`getpass.getpass`. End-of-file and
+keyboard interruption are translated to the protocol's cancellation sentinel,
+``None``; :func:`upref.prompt.collect` then raises
+:class:`upref.errors.PromptCancelled`.
 
-import logging
-import sys
-import os
-import os.path
-import tempfile
+Secret entry delegates to ``getpass`` and suppresses display of the current
+value. Non-echoing input depends on terminal support; the standard library can
+warn and fall back to echoed input. The raw secret is returned as plaintext and
+is not encrypted in memory or at rest.
+"""
+
+from __future__ import annotations
+
+import builtins
 import getpass
+from collections.abc import Callable
 
-__all__ = ['get_data']
-
-###############################################################################
-# Get the data from the user
-###############################################################################
-def get_data(data_description):
-    gui = data_description.get('__gui__')
-    if 'title' in gui:
-        print(gui['title'])
-        print('-' * len(gui['title']))
-        print()
-
-    for key in data_description:
-        if not key.endswith("__") and not key.startswith("__"):
-            data = data_description[key]
-            if 'label' in data:
-                print(data['label'])
-            if 'description' in data:
-                print(data['description'])
-
-            if 'type' in data_description[key] and \
-                    data_description[key]['type'].upper().startswith("PASS"):
-                data_description[key]['value'] = getpass.getpass("-->")
-            else:
-                data_description[key]['value'] = input("-->")
-
-            print()
-
-    if 'button_label' in gui:
-        print(gui['button_label'])
-
-    return data_description
-
-###############################################################################
-# Display a message
-###############################################################################
-def message(msg_txt, title):
-    print(title)
-    print(msg_txt)
-
-###############################################################################
-# Test the frozen situation of the executable
-###############################################################################
-def is_frozen():
-    return getattr(sys, 'frozen', False)
-
-###############################################################################
-# Find the filename of this file (depend on the frozen or not)
-# This function return the filename of this script.
-# The function is complex for the frozen system
-#
-# @return the folder of THIS script.
-###############################################################################
-def __get_this_folder():
-    return os.path.split(os.path.abspath(os.path.realpath(
-        __get_this_filename())))[0]
-
-###############################################################################
-# Find the filename of this file (depend on the frozen or not)
-# This function return the filename of this script.
-# The function is complex for the frozen system
-#
-# @return the filename of THIS script.
-###############################################################################
-def __get_this_filename():
-    result = ""
-
-    if is_frozen():
-        # frozen
-        result = sys.executable
-    else:
-        # unfrozen
-        result = __file__
-
-    return result
+from ._types import ConfigValue
+from .prompt import Field
 
 
-###############################################################################
-# Set up the logging system
-###############################################################################
-def __set_logging_system():
-    log_filename = os.path.splitext(os.path.abspath(
-        os.path.realpath(__get_this_filename())))[0] + '.log'
-
-    if is_frozen():
-        log_filename = os.path.abspath(os.path.join(
-            tempfile.gettempdir(),
-            os.path.basename(__get_this_filename()) + '.log'))
-
-    logging.basicConfig(filename=log_filename, level=logging.DEBUG,
-                        format='%(asctime)s: %(message)s',
-                        datefmt='%m/%d/%Y %I:%M:%S %p')
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-    # set a format which is simpler for console use
-    formatter = logging.Formatter('%(asctime)s: %(levelname)-8s %(message)s')
-    # tell the handler to use this format
-    console.setFormatter(formatter)
-    # add the handler to the root logger
-    logging.getLogger('').addHandler(console)
+ReadFunction = Callable[[str], str]
+PrintFunction = Callable[[str], object]
 
 
-###############################################################################
-# Main script call only if this script is runned directly
-###############################################################################
-def __main():
-    # ------------------------------------
-    logging.info('Started %s', __get_this_filename())
-    logging.info('The Python version is %s.%s.%s',
-                 sys.version_info[0], sys.version_info[1], sys.version_info[2])
+class TTYPrompter:
+    """Ask for fields using standard terminal input.
 
-    conf = {
-        '__gui__': {
-            'title': 'The title here',
-            'icon': 'src/python/upref/tower.ico',
-            'button_label': 'Cool baby',
-        },
-        'url': {
-            'label': 'URL',
-            'description': 'Could you give me a coffee not an URL',
-        },
-        'login': {
-            'label': 'Login',
-            'description': 'Could you give me a coffee again',
-        },
-        'logsdfin11': {
-            'label': 'Login new one',
-            'description': 'Could you give me a coffee black',
-        },
-        'logqqqin13': {
-            'label': 'Logoff',
-            'description': 'Could you give me a\nTEA',
-        },
-        'loginfsdf12': {
-            'label': 'Password',
-            'description': 'Could you give me a coffee again',
-            'value': "lkjhlkhj",
-            'type': "pass",
-        },
-    }
+    The three functions are injectable so applications and tests can control
+    input and presentation without replacing process-wide builtins. This
+    prompter owns no external resource and requires no explicit close step.
+    """
 
-    get_data(conf)
+    def __init__(
+        self,
+        input_func: ReadFunction | None = None,
+        getpass_func: ReadFunction | None = None,
+        print_func: PrintFunction | None = None,
+    ) -> None:
+        """Initialize a terminal prompter.
 
-    logging.info('Finished')
-    # ------------------------------------
+        Args:
+            input_func: Reader for ordinary fields. It receives the prompt text
+                and returns one raw line. Defaults to :func:`input`.
+            getpass_func: Reader for secret fields. It receives the prompt text
+                and should avoid echoing entered characters. Defaults to
+                :func:`getpass.getpass`.
+            print_func: Function used to display labels, descriptions, current
+                values, and errors. Defaults to :func:`print`.
+
+        Returns:
+            None.
+        """
+        self._input = builtins.input if input_func is None else input_func
+        self._getpass = getpass.getpass if getpass_func is None else getpass_func
+        self._print = builtins.print if print_func is None else print_func
+
+    def ask(
+        self,
+        name: str,
+        field: Field,
+        current: ConfigValue,
+    ) -> str | None:
+        """Display field context and read one raw line.
+
+        The field label and optional description are displayed first. A
+        non-``None`` current value is also displayed for ordinary fields.
+        Secret fields instead use the injected password reader and never show
+        the current value. The returned secret is nevertheless plaintext.
+
+        Args:
+            name: Configuration key, used as the label when ``field.label`` is
+                empty.
+            field: Presentation metadata, including whether entry is secret.
+            current: Existing value to display for an ordinary field, or
+                ``None`` when unavailable.
+
+        Returns:
+            The raw line returned by the selected reader, including an empty
+            string, or ``None`` when reading raises :class:`EOFError` or
+            :class:`KeyboardInterrupt`.
+
+        Raises:
+            Exception: Display-function errors and reader errors other than
+                :class:`EOFError` and :class:`KeyboardInterrupt` propagate.
+                The two cancellation exceptions are converted only when the
+                selected reader raises them.
+        """
+        self._print(field.label or name)
+        if field.description:
+            self._print(field.description)
+        if current is not None and not field.secret:
+            self._print(f"Current value: {current}")
+
+        reader = self._getpass if field.secret else self._input
+        try:
+            return reader("> ")
+        except (EOFError, KeyboardInterrupt):
+            return None
+
+    def show_error(self, message: str) -> None:
+        """Display a conversion or validation error with a clear prefix.
+
+        Args:
+            message: Human-readable error supplied by the collection layer.
+
+        Returns:
+            None.
+
+        Raises:
+            Exception: Any exception from the injected output function
+                propagates unchanged.
+        """
+        self._print(f"Error: {message}")
 
 
-###############################################################################
-# Call main function if the script is main
-# Exec only if this script is runned directly
-###############################################################################
-if __name__ == '__main__':
-    __set_logging_system()
-    __main()
+__all__ = ["TTYPrompter"]

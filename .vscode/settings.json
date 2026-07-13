@@ -1,30 +1,20 @@
 {
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv",
+    "python.terminal.activateEnvironment": true,
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "python.testing.pytestArgs": [
-        "-c",
-        "${workspaceRoot}/pytest.ini",
-        "--junitxml=${workspaceRoot}/tests/test_result.xml",
-        "-v", // increase verbosity
-        // "-l", // show locals in tracebacks
-        // "-x", // exit instantly on first error or failed test
-        // "--ff", // run all tests but run the last failures first
-        // "--color=yes", // color terminal output (yes/no/auto)
-        "${workspaceRoot}/"
+        "--basetemp=.pytest_tmp",
+        "tests"
     ],
-    "python.linting.pycodestyleEnabled": true,
-    "python.linting.pycodestyleArgs": [
-        "--config=${workspaceRoot}/.config/pep8.conf"
-    ],
-    // "python.linting.pylintEnabled": true,
-    // "python.linting.pylintArgs": [
-    "pylint.args": [
-        "--rcfile=${workspaceRoot}/.config/pylint.conf"
-    ],
-    "python.formatting.autopep8Args": [
-        "--global-config=${workspaceRoot}/.config/pep8.conf"
-    ],
-    "editor.formatOnSave": true,
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": "explicit",
+            "source.organizeImports.ruff": "explicit"
+        }
+    },
     "files.exclude": {
         "**/.git": true,
         "**/.svn": true,
@@ -32,8 +22,7 @@
         "**/CVS": true,
         "**/.DS_Store": true,
         "**/doc/html": true,
-        "**/docs/html": true,
+        "**/docs/html": true
     },
-    "git.ignoreLimitWarning": true,
-    "python.testing.nosetestsEnabled": false,
+    "git.ignoreLimitWarning": true
 }

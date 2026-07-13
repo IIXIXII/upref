@@ -1,226 +1,138 @@
-@ECHO off
-REM ###############################################################################
-REM # 
-REM # Copyright (c) 2018 Florent TOURNOIS
-REM # 
-REM # Permission is hereby granted, free of charge, to any person obtaining a copy
-REM # of this software and associated documentation files (the "Software"), to deal
-REM # in the Software without restriction, including without limitation the rights
-REM # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-REM # copies of the Software, and to permit persons to whom the Software is
-REM # furnished to do so, subject to the following conditions:
-REM # 
-REM # The above copyright notice and this permission notice shall be included in 
-REM # all copies or substantial portions of the Software.
-REM # 
-REM # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-REM # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-REM # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-REM # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-REM # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-REM # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-REM # SOFTWARE.
-REM # 
-REM ###############################################################################
-GOTO MAKE_ACTION
-REM -------------------------------------------------------------------------------
-:PRINT_LINE <textVar>
-(
-    SET "LINE_HERE=%~1"
-    SETLOCAL EnableDelayedExpansion
-    @ECHO !LINE_HERE!
-    ENDLOCAL
-    exit /b
+@echo off
+setlocal EnableExtensions EnableDelayedExpansion
+
+set "ROOT=%~dp0"
+set "VENV_PYTHON=%ROOT%.venv\Scripts\python.exe"
+set "BOOTSTRAP=%ROOT%scripts\bootstrap.ps1"
+set "POWERSHELL=%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe"
+
+cd /d "%ROOT%"
+
+if "%~1"=="" goto action_help
+if /i "%~1"=="setup" goto action_setup
+if /i "%~1"=="test" goto action_test
+if /i "%~1"=="check" goto action_check
+if /i "%~1"=="docs" goto action_docs
+if /i "%~1"=="build" goto action_build
+if /i "%~1"=="clean" goto action_clean
+if /i "%~1"=="help" goto action_help
+if /i "%~1"=="-h" goto action_help
+if /i "%~1"=="--help" goto action_help
+
+>&2 echo Unknown action: %~1
+set "HELP_EXIT_CODE=2"
+goto print_help
+
+:action_setup
+if not exist "%BOOTSTRAP%" (
+    >&2 echo Bootstrap script not found: "%BOOTSTRAP%"
+    exit /b 1
 )
-REM -------------------------------------------------------------------------------
-:CONFIGURE_DISPLAY
-(
-    CHCP 65001
-    MODE 100,40
-    exit /b
-)
-REM -------------------------------------------------------------------------------
-:CLEAR_SCREEN
-(
-	CLS
-    CALL :PRINT_LINE "╔══════════════════════════════════════════════════════════════════════════════════════════════════╗"
-    CALL :PRINT_LINE "║                                _    _   _____           __                                       ║"
-    CALL :PRINT_LINE "║                               | |  | | |  __ \         / _|                                      ║"
-    CALL :PRINT_LINE "║                               | |  | | | |__) | __ ___| |_                                       ║"
-    CALL :PRINT_LINE "║                               | |  | | |  ___/ '__/ _ \  _|                                      ║"
-    CALL :PRINT_LINE "║                               | |__| | | |   | | |  __/ |                                        ║"
-    CALL :PRINT_LINE "║                                \____/  |_|   |_|  \___|_|                                        ║"
-    CALL :PRINT_LINE "║                                                                                                  ║"
-    CALL :PRINT_LINE "╚══════════════════════════════════════════════════════════════════════════════════════════════════╝"
-    exit /b
-)
-REM -------------------------------------------------------------------------------
-:LINE_BREAK
-(
-	CALL :PRINT_LINE "├──────────────────────────────────────────────────────────────────────────────────────────────────┤"
-    exit /b
-)
-REM -------------------------------------------------------------------------------
-:UPDATE_PIP
-(
-    python -V
-    pip -V
-    python -m pip install --upgrade pip wheel setuptools
-    exit /b
-)
+if "%~2"=="" goto action_setup_auto
+if /i not "%~2"=="-Python" goto action_setup_usage
+if "%~3"=="" goto action_setup_usage
+if not "%~4"=="" goto action_setup_usage
+"%POWERSHELL%" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%BOOTSTRAP%" -Python "%~3"
+exit /b %errorlevel%
 
-REM -------------------------------------------------------------------------------
-:MAKE_ACTION
-CALL :CONFIGURE_DISPLAY
-CALL :CLEAR_SCREEN
+:action_setup_auto
+"%POWERSHELL%" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%BOOTSTRAP%"
+exit /b %errorlevel%
 
-SET MYPATH=%~dp0
-cd %MYPATH%
+:action_setup_usage
+>&2 echo Usage: make.bat setup [-Python ^<python-executable^>]
+exit /b 2
 
-CALL :PRINT_LINE "    MYPATH=%MYPATH%" 
-CALL :LINE_BREAK
-
-IF /I "%1" == "clean"              GOTO :action_clean
-IF /I "%1" == "requirements"       GOTO :action_requirements
-IF /I "%1" == "requirements-dev"   GOTO :action_requirements_dev
-IF /I "%1" == "requirements-docs"  GOTO :action_requirements_docs
-IF /I "%1" == "install-editable"   GOTO :action_install_editable
-IF /I "%1" == "test"               GOTO :action_test
-IF /I "%1" == "doxygen"            GOTO :action_doxygen
-IF /I "%1" == "sphinx"             GOTO :action_sphinx
-IF /I "%1" == "build"              GOTO :action_build
-IF /I "%1" == "increase_version"   GOTO :action_increaseversion
-IF /I "%1" == "upload"             GOTO :action_upload
-IF /I "%1" == "tag_version"        GOTO :action_tag_version
-
-CALL :PRINT_LINE "   '%1' is not an action. Can not find the right action." 
-GOTO :ENDOFFILE
-
-REM -------------------------------------------------------------------------------
-:action_clean
-CALL :PRINT_LINE "   Clean the folder" 
-REM -------------------------------------------------------------------------------
-CALL :UPDATE_PIP
-pip install -r requirements.txt
-goto :ENDOFFILE
-
-REM -------------------------------------------------------------------------------
-:action_requirements
-CALL :PRINT_LINE "   Requirements python packages for running the lib" 
-REM -------------------------------------------------------------------------------
-CALL :UPDATE_PIP
-pip install -r requirements.txt
-goto :ENDOFFILE
-
-REM -------------------------------------------------------------------------------
-:action_requirements_dev
-CALL :PRINT_LINE "   Requirements python packages for devs" 
-REM -------------------------------------------------------------------------------
-CALL :UPDATE_PIP
-pip install -r requirements-dev.txt
-goto :ENDOFFILE
-
-REM -------------------------------------------------------------------------------
-:action_requirements_docs
-CALL :PRINT_LINE "   Requirements python packages for devs" 
-REM -------------------------------------------------------------------------------
-CALL :UPDATE_PIP
-pip install -r requirements-docs.txt
-goto :ENDOFFILE
-
-REM -------------------------------------------------------------------------------
-:action_install_editable
-CALL :PRINT_LINE "   Install editable version" 
-REM -------------------------------------------------------------------------------
-CALL :UPDATE_PIP
-pip install -e .
-goto :ENDOFFILE
-
-REM -------------------------------------------------------------------------------
 :action_test
-CALL :PRINT_LINE "   Launch test" 
-REM -------------------------------------------------------------------------------
-pytest -v
-goto :ENDOFFILE
-
-REM -------------------------------------------------------------------------------
-:action_doxygen
-CALL :PRINT_LINE "   Doxygen" 
-REM -------------------------------------------------------------------------------
-cd docs
-SET DOXYGEN_PATH=C:\\Program Files\\doxygen\\bin
-SET DOXYGEN_EXE=doxygen.exe
-SET DOXYGEN_CMD=%DOXYGEN_PATH%\\%DOXYGEN_EXE%
-SET DOC_FOLDER=%~dp0\\docs
-
-SET CONFIG_FILE="%DOC_FOLDER%\\config_doc.dox"
-
-IF EXIST "%DOXYGEN_CMD%" (
-    ECHO "Found doxygen %DOXYGEN_CMD%"
-) ELSE (
-    ECHO "%DOXYGEN_CMD%"
-    ECHO "Doxygen not found"
-    pause
-    GOTO :ENDOFFILE
+if not exist "%VENV_PYTHON%" (
+    >&2 echo The project environment was not found: "%VENV_PYTHON%"
+    >&2 echo Run "make.bat setup" first.
+    exit /b 1
 )
+"%VENV_PYTHON%" -m pytest --basetemp=.pytest_tmp
+exit /b %errorlevel%
 
-IF EXIST "%CONFIG_FILE%" (
-    ECHO "Found config file %CONFIG_FILE%"
-) ELSE (
-    ECHO "%CONFIG_FILE%"
-    ECHO "Config file not found"
-    pause
-    GOTO :ENDOFFILE
+:action_check
+if not exist "%VENV_PYTHON%" (
+    >&2 echo The project environment was not found: "%VENV_PYTHON%"
+    >&2 echo Run "make.bat setup" first.
+    exit /b 1
 )
+"%VENV_PYTHON%" -m ruff format --check upref tests examples scripts docs\conf.py
+if errorlevel 1 exit /b %errorlevel%
+"%VENV_PYTHON%" -m ruff check upref tests examples scripts docs\conf.py
+if errorlevel 1 exit /b %errorlevel%
+"%VENV_PYTHON%" -m mypy upref examples
+exit /b %errorlevel%
 
-CALL :PRINT_LINE "Start doxygen generation"
-"%DOXYGEN_CMD%"  "%CONFIG_FILE%"
+:action_docs
+if not exist "%VENV_PYTHON%" (
+    >&2 echo The project environment was not found: "%VENV_PYTHON%"
+    >&2 echo Run "make.bat setup" first.
+    exit /b 1
+)
+"%VENV_PYTHON%" -m sphinx -E -a -W --keep-going -b html docs docs\_build\html
+exit /b %errorlevel%
 
-goto :ENDOFFILE
-
-REM -------------------------------------------------------------------------------
-:action_sphinx
-CALL :PRINT_LINE "   Launch sphinx documentation" 
-REM -------------------------------------------------------------------------------
-set SPHINXBUILD=sphinx-build
-set SOURCEDIR=docs
-set BUILDDIR=build
-
-%SPHINXBUILD% -M html %SOURCEDIR% %BUILDDIR%
-
-goto :ENDOFFILE
-
-REM -------------------------------------------------------------------------------
 :action_build
-CALL :PRINT_LINE "   Build" 
-REM -------------------------------------------------------------------------------
-python setup.py sdist bdist_wheel --universal
-goto :ENDOFFILE
+if not exist "%VENV_PYTHON%" (
+    >&2 echo The project environment was not found: "%VENV_PYTHON%"
+    >&2 echo Run "make.bat setup" first.
+    exit /b 1
+)
+"%VENV_PYTHON%" -m build
+exit /b %errorlevel%
 
-REM -------------------------------------------------------------------------------
-:action_increaseversion
-CALL :PRINT_LINE "   Increase version" 
-REM -------------------------------------------------------------------------------
-python setup.py increaseversion
-goto :ENDOFFILE
+:action_clean
+set "CLEAN_FAILED=0"
+for %%D in (
+    "%ROOT%build"
+    "%ROOT%dist"
+    "%ROOT%docs\_build"
+    "%ROOT%htmlcov"
+    "%ROOT%.pytest_cache"
+    "%ROOT%.pytest_tmp"
+    "%ROOT%.mypy_cache"
+    "%ROOT%.ruff_cache"
+    "%ROOT%__pycache__"
+) do if exist "%%~D" (
+    rmdir /s /q "%%~D"
+    if exist "%%~D" set "CLEAN_FAILED=1"
+)
 
-REM -------------------------------------------------------------------------------
-:action_upload
-CALL :PRINT_LINE "   Upload package" 
-REM -------------------------------------------------------------------------------
-python setup.py upload
-goto :ENDOFFILE
+for /d %%D in ("%ROOT%*.egg-info") do if exist "%%~fD" (
+    rmdir /s /q "%%~fD"
+    if exist "%%~fD" set "CLEAN_FAILED=1"
+)
 
-REM -------------------------------------------------------------------------------
-:action_tag_version
-CALL :PRINT_LINE "   Tag version" 
-REM -------------------------------------------------------------------------------
-python setup.py tagversion
-goto :ENDOFFILE
+for %%R in (upref tests examples scripts docs) do (
+    if exist "%ROOT%%%R" (
+        for /d /r "%ROOT%%%R" %%D in (__pycache__) do if exist "%%~fD" (
+            rmdir /s /q "%%~fD"
+            if exist "%%~fD" set "CLEAN_FAILED=1"
+        )
+    )
+)
 
-REM -------------------------------------------------------------------------------
-:ENDOFFILE
-CALL :PRINT_LINE "   End of the configuration"
-CALL :LINE_BREAK
-PAUSE
-REM -------------------------------------------------------------------------------
+del /q "%ROOT%.coverage" "%ROOT%.coverage.*" "%ROOT%coverage.xml" "%ROOT%tests\test_result.xml" >nul 2>&1
+if "!CLEAN_FAILED!"=="1" (
+    >&2 echo Some generated artifacts could not be removed.
+    exit /b 1
+)
+exit /b 0
+
+:action_help
+set "HELP_EXIT_CODE=0"
+
+:print_help
+echo Usage: make.bat ^<action^>
+echo.
+echo Actions:
+echo   setup [-Python ^<path^>]  Create/update .venv and install the dev environment
+echo   test                     Run the test suite
+echo   check                    Check formatting, lint, and static typing
+echo   docs                     Build the Sphinx documentation
+echo   build                    Build source and wheel distributions
+echo   clean                    Remove project build and cache artifacts
+echo   help                     Show this help
+exit /b %HELP_EXIT_CODE%
