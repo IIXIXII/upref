@@ -33,6 +33,50 @@ selected changes are merged and persisted, and the example removes its file.
    :language: python
    :linenos:
 
+Required project variables
+--------------------------
+
+This terminal-based setup asks only for project variables that have not been
+saved yet: directories, the expected Python version, and whether tests should
+run before a build. Boolean input accepts common forms such as ``yes``, ``no``,
+``on``, and ``off``.
+
+.. literalinclude:: ../examples/project_variables.py
+   :language: python
+   :linenos:
+
+Environment profiles and runtime overrides
+------------------------------------------
+
+This example stores development, testing, and production profiles. The
+``UPREF_PROFILE``, ``UPREF_SERVICE_URL``, and ``UPREF_TIMEOUT`` environment
+variables can temporarily override the selected values without modifying the
+saved YAML file.
+
+For example, in PowerShell:
+
+.. code-block:: powershell
+
+   $env:UPREF_PROFILE = "production"
+   $env:UPREF_TIMEOUT = "45"
+   .\.venv\Scripts\python.exe examples\environment_profiles.py
+
+.. literalinclude:: ../examples/environment_profiles.py
+   :language: python
+   :linenos:
+
+Multiple projects
+-----------------
+
+Related projects can share one application configuration directory while
+using a distinct YAML filename for each project. This is useful for a
+workspace containing a frontend, backend, worker, or other independently
+configured component.
+
+.. literalinclude:: ../examples/multiple_projects.py
+   :language: python
+   :linenos:
+
 Terminal collection
 -------------------
 

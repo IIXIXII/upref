@@ -188,6 +188,9 @@ The complete user guide and API reference are available on
 
 - `basic_store.py` covers a save/load cycle;
 - `defaults_and_update.py` covers defaults, recursive updates, and deletion;
+- `project_variables.py` collects required variables for one project;
+- `environment_profiles.py` selects profiles with temporary environment overrides;
+- `multiple_projects.py` stores independent settings for related projects;
 - `tty_collection.py` collects missing values without a GUI;
 - `migrate_v1.py` imports a historical configuration.
 
