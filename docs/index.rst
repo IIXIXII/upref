@@ -41,6 +41,7 @@ task-oriented guides below for behavioral details and the :doc:`API reference
    :caption: Project
 
    development
+   releasing
    license_link
 
 Site indices

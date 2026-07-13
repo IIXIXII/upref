@@ -81,6 +81,8 @@ if not exist "%VENV_PYTHON%" (
     exit /b 1
 )
 "%VENV_PYTHON%" -m build
+if errorlevel 1 exit /b %errorlevel%
+"%VENV_PYTHON%" -m twine check dist\*
 exit /b %errorlevel%
 
 :action_clean

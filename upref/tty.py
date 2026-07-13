@@ -21,7 +21,6 @@ from collections.abc import Callable
 from ._types import ConfigValue
 from .prompt import Field
 
-
 ReadFunction = Callable[[str], str]
 PrintFunction = Callable[[str], object]
 

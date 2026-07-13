@@ -45,6 +45,7 @@ def test_save_load_update_and_delete(tmp_path):
 
     store.save({"message": "été", "nested": {"one": 1}})
     assert store.exists()
+    assert store.filename == "settings.yaml"
     assert store.path == (tmp_path / "settings.yaml").resolve()
     assert store.load() == {"message": "été", "nested": {"one": 1}}
 

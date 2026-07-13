@@ -3,14 +3,10 @@
     "tasks": [
         {
             "label": "Setup",
-            "type": "process",
-            "command": "powershell.exe",
+            "type": "shell",
+            "command": "${workspaceFolder}/make.bat",
             "args": [
-                "-NoProfile",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                "${workspaceFolder}/scripts/bootstrap.ps1"
+                "setup"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -24,6 +20,8 @@
             "args": [
                 "-m",
                 "pytest",
+                "-p",
+                "no:cacheprovider",
                 "--basetemp=.pytest_tmp",
                 "tests"
             ],
@@ -89,11 +87,21 @@
         },
         {
             "label": "Check",
+            "type": "shell",
+            "command": "${workspaceFolder}/make.bat",
+            "args": [
+                "check"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Verify",
             "dependsOrder": "sequence",
             "dependsOn": [
-                "Ruff format check",
-                "Ruff check",
-                "Mypy",
+                "Check",
                 "Test"
             ],
             "group": {
@@ -104,19 +112,10 @@
         },
         {
             "label": "Docs (Sphinx)",
-            "type": "process",
-            "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+            "type": "shell",
+            "command": "${workspaceFolder}/make.bat",
             "args": [
-                "-m",
-                "sphinx",
-                "-E",
-                "-a",
-                "-W",
-                "--keep-going",
-                "-b",
-                "html",
-                "docs",
-                "docs/_build/html"
+                "docs"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -125,10 +124,9 @@
         },
         {
             "label": "Build",
-            "type": "process",
-            "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+            "type": "shell",
+            "command": "${workspaceFolder}/make.bat",
             "args": [
-                "-m",
                 "build"
             ],
             "options": {

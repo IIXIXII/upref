@@ -6,7 +6,9 @@ from types import ModuleType
 
 import pytest
 
-from upref.errors import PromptCancelled
+import upref.gui as gui_module
+import upref.prompt as prompt_module
+from upref.errors import PromptCancelled, PromptUnavailableError
 from upref.gui import GuiPrompter
 from upref.prompt import Field, collect
 
@@ -186,6 +188,68 @@ def test_invalid_interface_is_rejected() -> None:
     with pytest.raises(ValueError, match="interface"):
         collect({}, interface="web")
 
+    with pytest.raises(ValueError, match="interface"):
+        prompt_module._make_prompter("web")
+
+
+def test_invalid_custom_interface_is_rejected() -> None:
+    with pytest.raises(TypeError, match="interface"):
+        collect({}, interface=object())  # type: ignore[arg-type]
+
+    with pytest.raises(TypeError, match="interface"):
+        prompt_module._make_prompter(object())  # type: ignore[arg-type]
+
+
+def test_invalid_schema_entries_are_rejected() -> None:
+    with pytest.raises(TypeError, match="keys must be strings"):
+        collect({1: Field("Invalid")}, interface=StubPrompter())  # type: ignore[dict-item]
+
+    with pytest.raises(TypeError, match="must be a Field"):
+        collect({"invalid": object()}, interface=StubPrompter())  # type: ignore[dict-item]
+
+
+def test_owned_bundled_prompters_are_created_and_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class OwnedPrompter(StubPrompter):
+        def __init__(self) -> None:
+            super().__init__(["value"])
+            self.closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    tty_prompter = OwnedPrompter()
+    gui_prompter = OwnedPrompter()
+    monkeypatch.setattr("upref.tty.TTYPrompter", lambda: tty_prompter)
+    monkeypatch.setattr("upref.gui.GuiPrompter", lambda: gui_prompter)
+
+    assert collect({"name": Field("Name")}, interface="tty") == {"name": "value"}
+    assert tty_prompter.closed is True
+    assert prompt_module._make_prompter("gui") == (gui_prompter, True)
+
+
+def test_gui_import_and_initialization_failures_are_wrapped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_import(name: str) -> ModuleType:
+        raise ImportError("wx is unavailable")
+
+    monkeypatch.setattr(gui_module, "import_module", fail_import)
+    with pytest.raises(PromptUnavailableError, match="could not be imported"):
+        GuiPrompter()
+
+    fake_wx = ModuleType("wx")
+    fake_wx.GetApp = lambda: None
+
+    def fail_app(redirect: bool) -> object:
+        raise RuntimeError("display is unavailable")
+
+    fake_wx.App = fail_app
+    monkeypatch.setattr(gui_module, "import_module", lambda name: fake_wx)
+    with pytest.raises(PromptUnavailableError, match="could not be initialized"):
+        GuiPrompter()
+
 
 def test_gui_prompter_uses_fake_wx_and_masks_secret_default(
     monkeypatch: pytest.MonkeyPatch,
@@ -199,6 +263,7 @@ def test_gui_prompter_uses_fake_wx_and_masks_secret_default(
     dialogs: list[object] = []
     apps: list[object] = []
     messages: list[tuple[object, ...]] = []
+    modal_results = [fake_wx.ID_OK, 0]
 
     class FakeApp:
         def __init__(self, redirect: bool) -> None:
@@ -216,7 +281,7 @@ def test_gui_prompter_uses_fake_wx_and_masks_secret_default(
             dialogs.append(self)
 
         def ShowModal(self) -> int:
-            return fake_wx.ID_OK
+            return modal_results.pop(0)
 
         def GetValue(self) -> str:
             return "replacement"
@@ -236,13 +301,22 @@ def test_gui_prompter_uses_fake_wx_and_masks_secret_default(
         Field("Token", description="API token", secret=True),
         "do-not-display",
     )
+    cancelled = prompter.ask("attempts", Field("Attempts"), 3)
     prompter.show_error("Wrong token")
-    prompter.close()
+    assert prompter.__enter__() is prompter
+    prompter.__exit__(None, None, None)
     prompter.close()
 
+    with pytest.raises(RuntimeError, match="closed"):
+        prompter.ask("name", Field("Name"), None)
+    with pytest.raises(RuntimeError, match="closed"):
+        prompter.show_error("Too late")
+
     assert answer == "replacement"
+    assert cancelled is None
     assert dialogs[0].args[3] == ""  # type: ignore[attr-defined]
     assert dialogs[0].args[4] & fake_wx.TE_PASSWORD  # type: ignore[attr-defined]
+    assert dialogs[1].args[3] == "3"  # type: ignore[attr-defined]
     assert dialogs[0].destroyed is True  # type: ignore[attr-defined]
     assert messages[0][0] == "Wrong token"
     assert apps[0].destroyed is True  # type: ignore[attr-defined]

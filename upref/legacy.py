@@ -13,12 +13,12 @@ part of the recommended v2 workflow.
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Mapping
 from copy import deepcopy
 from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
-import warnings
 
 from ._merge import deep_merge
 from ._paths import legacy_config_path

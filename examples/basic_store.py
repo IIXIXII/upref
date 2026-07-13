@@ -2,7 +2,6 @@
 
 from upref import ConfigStore
 
-
 store = ConfigStore("upref-basic-example")
 
 store.save(

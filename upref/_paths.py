@@ -14,7 +14,6 @@ from platformdirs import PlatformDirs, user_config_path
 
 from .errors import ConfigPathError
 
-
 PathLike = str | os.PathLike[str]
 
 

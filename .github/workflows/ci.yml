@@ -1,0 +1,221 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+  schedule:
+    # Run weekly to catch compatibility issues introduced by new dependencies.
+    - cron: "17 5 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.12
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install package and quality tools
+        run: python -m pip install -e ".[test]"
+      - name: Check formatting
+        run: python -m ruff format --check upref tests examples scripts docs/conf.py
+      - name: Lint
+        run: python -m ruff check upref tests examples scripts docs/conf.py
+      - name: Type-check
+        run: python -m mypy upref examples
+
+  tests-linux:
+    name: Tests (Python ${{ matrix.python-version }}, Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
+          - "3.14"
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install package and test tools
+        run: python -m pip install -e ".[test]"
+      - name: Run tests with coverage
+        run: >-
+          python -m pytest
+          --cov=upref
+          --cov-report=term-missing
+          --cov-report=xml:coverage.xml
+          --cov-report=html:htmlcov
+      - name: Upload coverage report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-python-${{ matrix.python-version }}
+          path: |
+            coverage.xml
+            htmlcov/
+          if-no-files-found: error
+          retention-days: 14
+
+  tests-platforms:
+    name: Smoke tests (Python 3.14, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-latest
+          - macos-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.14
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.14"
+          cache: pip
+      - name: Install package and test tools
+        run: python -m pip install -e ".[test]"
+      - name: Run smoke tests
+        run: python -m pytest -q
+
+  documentation:
+    name: Documentation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.12
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install package and documentation tools
+        run: python -m pip install -e ".[docs]"
+      - name: Build documentation with strict references
+        run: python -m sphinx -E -a -W --keep-going -b html docs docs/_build/html
+
+  documentation-links:
+    name: Documentation links
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.12
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install package and documentation tools
+        run: python -m pip install -e ".[docs]"
+      - name: Check documentation links
+        run: python -m sphinx -W --keep-going -b linkcheck docs docs/_build/linkcheck
+
+  package:
+    name: Build and verify distributions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.12
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install build tools
+        run: python -m pip install "build>=1.2" "twine>=5"
+      - name: Build wheel and source distribution
+        run: python -m build
+      - name: Check distribution metadata
+        run: python -m twine check dist/*
+      - name: Test the wheel in a clean environment
+        shell: bash
+        run: |
+          python -m venv "$RUNNER_TEMP/upref-wheel-smoke"
+          "$RUNNER_TEMP/upref-wheel-smoke/bin/python" -m pip install dist/*.whl
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/upref-wheel-smoke/bin/python" -m pip check
+          "$RUNNER_TEMP/upref-wheel-smoke/bin/python" -c "import upref; print(upref.__version__)"
+      - name: Upload distributions
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: python-distributions
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  ci-success:
+    name: CI success
+    if: always()
+    needs:
+      - quality
+      - tests-linux
+      - tests-platforms
+      - documentation
+      - package
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions: {}
+    steps:
+      - name: Require every mandatory CI job to pass
+        shell: bash
+        env:
+          QUALITY_RESULT: ${{ needs.quality.result }}
+          LINUX_RESULT: ${{ needs.tests-linux.result }}
+          PLATFORMS_RESULT: ${{ needs.tests-platforms.result }}
+          DOCUMENTATION_RESULT: ${{ needs.documentation.result }}
+          PACKAGE_RESULT: ${{ needs.package.result }}
+        run: |
+          for result in \
+            "$QUALITY_RESULT" \
+            "$LINUX_RESULT" \
+            "$PLATFORMS_RESULT" \
+            "$DOCUMENTATION_RESULT" \
+            "$PACKAGE_RESULT"
+          do
+            if [[ "$result" != "success" ]]; then
+              echo "A mandatory CI job did not pass: $result" >&2
+              exit 1
+            fi
+          done

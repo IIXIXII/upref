@@ -9,6 +9,11 @@ from upref import _storage
 from upref.errors import ConfigFormatError, ConfigReadError, ConfigWriteError
 
 
+class InvalidPath:
+    def __fspath__(self) -> str:
+        raise OSError("invalid path")
+
+
 def test_load_missing_file_returns_empty_mapping(tmp_path: Path) -> None:
     assert _storage.load_yaml(tmp_path / "missing.yaml") == {}
 
@@ -37,6 +42,36 @@ def test_invalid_yaml_reports_path_and_location(tmp_path: Path) -> None:
     assert str(path) in message
     assert "line" in message
     assert "column" in message
+
+
+def test_yaml_errors_without_a_problem_mark_have_no_location() -> None:
+    assert _storage._yaml_error_location(_storage.yaml.YAMLError("invalid")) == ""
+
+
+def test_invalid_read_path_is_wrapped() -> None:
+    with pytest.raises(ConfigReadError, match="Invalid configuration path"):
+        _storage.load_yaml(InvalidPath())
+
+
+def test_non_utf8_files_are_reported_as_format_errors(tmp_path: Path) -> None:
+    path = tmp_path / "invalid-utf8.yaml"
+    path.write_bytes(b"value: \xff\n")
+
+    with pytest.raises(ConfigFormatError, match="not valid UTF-8"):
+        _storage.load_yaml(path)
+
+
+def test_read_errors_are_wrapped(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_open(self: Path, *args: object, **kwargs: object) -> object:
+        raise PermissionError("read denied")
+
+    monkeypatch.setattr(Path, "open", fail_open)
+
+    with pytest.raises(ConfigReadError, match="read denied"):
+        _storage.load_yaml(tmp_path / "config.yaml")
 
 
 @pytest.mark.parametrize("content", ["- one\n- two\n", "scalar\n", "42\n"])
@@ -92,6 +127,48 @@ def test_validation_happens_before_filesystem_changes(tmp_path: Path) -> None:
     assert not directory.exists()
 
 
+def test_invalid_write_path_is_wrapped() -> None:
+    with pytest.raises(ConfigWriteError, match="Invalid configuration path"):
+        _storage.save_yaml(InvalidPath(), {"value": 1})
+
+
+def test_yaml_serialization_errors_are_wrapped(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_dump(*args: object, **kwargs: object) -> str:
+        raise _storage.yaml.YAMLError("cannot serialize")
+
+    monkeypatch.setattr(_storage.yaml, "safe_dump", fail_dump)
+
+    with pytest.raises(ConfigFormatError, match="cannot serialize"):
+        _storage.save_yaml(tmp_path / "config.yaml", {"value": 1})
+
+
+def test_posix_save_sets_private_permissions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    chmod_calls: list[tuple[Path, int]] = []
+
+    class PosixOsProxy:
+        name = "posix"
+        fsync = staticmethod(os.fsync)
+        replace = staticmethod(os.replace)
+
+        @staticmethod
+        def chmod(path: Path, mode: int) -> None:
+            chmod_calls.append((path, mode))
+
+    monkeypatch.setattr(_storage, "os", PosixOsProxy)
+    path = tmp_path / "config.yaml"
+
+    _storage.save_yaml(path, {"private": True})
+
+    assert chmod_calls[0][1] == 0o600
+    assert _storage.load_yaml(path) == {"private": True}
+
+
 def test_failed_replace_preserves_existing_file_and_cleans_temp(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -112,6 +189,29 @@ def test_failed_replace_preserves_existing_file_and_cleans_temp(
     assert list(tmp_path.glob(".config.yaml.*.tmp")) == []
 
 
+def test_cleanup_errors_do_not_hide_the_primary_write_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = tmp_path / "config.yaml"
+
+    def fail_replace(source: Path, destination: Path) -> None:
+        raise OSError("replacement failed")
+
+    def fail_unlink(self: Path, missing_ok: bool = False) -> None:
+        raise OSError("cleanup failed")
+
+    monkeypatch.setattr(_storage.os, "replace", fail_replace)
+    monkeypatch.setattr(Path, "unlink", fail_unlink)
+
+    with pytest.raises(ConfigWriteError, match="replacement failed"):
+        _storage.save_yaml(path, {"value": 1})
+
+    monkeypatch.undo()
+    for temporary_path in tmp_path.glob(".config.yaml.*.tmp"):
+        temporary_path.unlink()
+
+
 @pytest.mark.skipif(os.name != "posix", reason="POSIX permissions only")
 def test_saved_file_has_private_posix_permissions(tmp_path: Path) -> None:
     path = tmp_path / "config.yaml"
@@ -127,3 +227,19 @@ def test_delete_file_reports_whether_file_existed(tmp_path: Path) -> None:
 
     assert _storage.delete_file(path) is True
     assert _storage.delete_file(path) is False
+
+
+def test_invalid_delete_path_and_delete_errors_are_wrapped(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with pytest.raises(ConfigWriteError, match="Invalid configuration path"):
+        _storage.delete_file(InvalidPath())
+
+    def fail_unlink(self: Path, missing_ok: bool = False) -> None:
+        raise PermissionError("delete denied")
+
+    monkeypatch.setattr(Path, "unlink", fail_unlink)
+
+    with pytest.raises(ConfigWriteError, match="delete denied"):
+        _storage.delete_file(tmp_path / "config.yaml")

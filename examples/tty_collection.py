@@ -2,7 +2,6 @@
 
 from upref import ConfigStore, Field, PromptCancelled, collect
 
-
 store = ConfigStore("upref-tty-example")
 schema = {
     "service_url": Field(

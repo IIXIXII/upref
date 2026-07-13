@@ -4,5 +4,10 @@
         "ms-python.debugpy",
         "charliermarsh.ruff",
         "ms-python.mypy-type-checker"
+    ],
+    "unwantedRecommendations": [
+        "ms-python.autopep8",
+        "ms-python.isort",
+        "ms-python.pylint"
     ]
 }

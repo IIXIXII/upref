@@ -2,7 +2,6 @@
 
 from upref import Config, ConfigStore
 
-
 store = ConfigStore("upref-update-example")
 
 defaults: Config = {

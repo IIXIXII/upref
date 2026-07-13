@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "upref"
-version = "2.0.0"
+version = "2.0.1"
 description = "Small, explicit, and safe per-user configuration storage"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -72,7 +72,7 @@ target-version = "py310"
 line-ending = "lf"
 
 [tool.ruff.lint]
-extend-select = ["D"]
+extend-select = ["D", "I"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -83,3 +83,11 @@ convention = "google"
 [tool.mypy]
 python_version = "3.10"
 strict = true
+
+[tool.coverage.run]
+source = ["upref"]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+skip_covered = true

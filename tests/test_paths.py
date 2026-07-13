@@ -8,6 +8,11 @@ from upref import _paths
 from upref.errors import ConfigPathError
 
 
+class InvalidPath:
+    def __fspath__(self) -> str:
+        raise OSError("invalid path")
+
+
 def test_explicit_directory_returns_absolute_child(tmp_path: Path) -> None:
     path = _paths.resolve_config_path(
         "sample-app",
@@ -131,6 +136,59 @@ def test_rejects_relative_explicit_directory() -> None:
         _paths.resolve_config_path("sample-app", directory=Path("relative"))
 
 
+def test_rejects_non_string_components(tmp_path: Path) -> None:
+    with pytest.raises(ConfigPathError, match="must be a string"):
+        _paths.resolve_config_path(42, directory=tmp_path)  # type: ignore[arg-type]
+
+
+def test_rejects_paths_detected_as_absolute_by_portable_check(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class AbsolutePurePath:
+        def __init__(self, value: str) -> None:
+            self.value = value
+
+        def is_absolute(self) -> bool:
+            return True
+
+    monkeypatch.setattr(_paths, "PurePosixPath", AbsolutePurePath)
+
+    with pytest.raises(ConfigPathError, match="absolute or drive-qualified"):
+        _paths._validate_component("safe-name", label="name")
+
+
+def test_wraps_invalid_and_unresolvable_directories(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with pytest.raises(ConfigPathError, match="Invalid directory"):
+        _paths.resolve_config_path("sample-app", directory=InvalidPath())
+
+    def fail_resolve(self: Path, strict: bool = False) -> Path:
+        raise OSError("cannot resolve")
+
+    monkeypatch.setattr(Path, "resolve", fail_resolve)
+    with pytest.raises(ConfigPathError, match="Unable to resolve directory"):
+        _paths._absolute_directory(tmp_path, label="directory")
+
+
+def test_wraps_confined_path_resolution_failures(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_resolve(self: Path, strict: bool = False) -> Path:
+        raise OSError("cannot resolve child")
+
+    monkeypatch.setattr(Path, "resolve", fail_resolve)
+    with pytest.raises(ConfigPathError, match="escapes"):
+        _paths._confined_child(tmp_path, "config.yaml")
+
+
+def test_confined_child_requires_exactly_one_component(tmp_path: Path) -> None:
+    with pytest.raises(ConfigPathError, match="identify one file"):
+        _paths._confined_child(tmp_path, "nested/config.yaml")
+
+
 def test_rejects_non_boolean_roaming(tmp_path: Path) -> None:
     with pytest.raises(ConfigPathError, match="boolean"):
         _paths.resolve_config_path(
@@ -138,6 +196,18 @@ def test_rejects_non_boolean_roaming(tmp_path: Path) -> None:
             directory=tmp_path,
             roaming=1,  # type: ignore[arg-type]
         )
+
+
+def test_wraps_platform_directory_discovery_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_user_config_path(**kwargs: object) -> Path:
+        raise OSError("platform lookup failed")
+
+    monkeypatch.setattr(_paths, "user_config_path", fail_user_config_path)
+
+    with pytest.raises(ConfigPathError, match="determine the configuration"):
+        _paths.resolve_config_path("sample-app")
 
 
 def test_rejects_existing_symlink_that_escapes_directory(tmp_path: Path) -> None:
@@ -193,6 +263,19 @@ def test_legacy_default_uses_documented_v1_data_directory(
         "appauthor": False,
         "roaming": True,
     }
+
+
+def test_wraps_legacy_platform_directory_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FailingPlatformDirs:
+        def __init__(self, **kwargs: object) -> None:
+            raise OSError("legacy lookup failed")
+
+    monkeypatch.setattr(_paths, "PlatformDirs", FailingPlatformDirs)
+
+    with pytest.raises(ConfigPathError, match="legacy Upref directory"):
+        _paths.legacy_config_path("old-settings")
 
 
 def test_legacy_path_rejects_traversal(tmp_path: Path) -> None:

@@ -27,7 +27,6 @@ from typing import Literal, Protocol, runtime_checkable
 from ._types import Config, ConfigValue, normalize_config
 from .errors import PromptCancelled
 
-
 Parser = Callable[[str], ConfigValue]
 Validator = Callable[[ConfigValue], bool | None]
 PromptMode = Literal["missing", "all"]

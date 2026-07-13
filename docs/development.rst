@@ -68,7 +68,7 @@ The main Windows entry points are:
    * - ``.\make.bat docs``
      - Build this Sphinx site with warnings treated as errors.
    * - ``.\make.bat build``
-     - Build the source distribution and wheel.
+     - Build the source distribution and wheel, then validate their metadata.
    * - ``.\make.bat clean``
      - Remove generated builds and caches without deleting ``.venv``.
 
@@ -81,6 +81,13 @@ Equivalent tools can be run directly through the environment interpreter:
    .\.venv\Scripts\python.exe -m ruff check upref tests examples scripts docs\conf.py
    .\.venv\Scripts\python.exe -m mypy upref examples
    .\.venv\Scripts\python.exe -m sphinx -E -a -W --keep-going -b html docs docs\_build\html
+
+Continuous integration also measures statement coverage and requires 100
+percent. Reproduce that gate locally with:
+
+.. code-block:: console
+
+   .\.venv\Scripts\python.exe -m pytest --cov=upref --cov-report=term-missing
 
 Documentation workflow
 ----------------------

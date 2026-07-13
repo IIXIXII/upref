@@ -2,7 +2,6 @@
 
 from upref import ConfigStore, UprefError
 
-
 LEGACY_NAME = "my_personnal_data"
 store = ConfigStore("upref-migration-example")
 

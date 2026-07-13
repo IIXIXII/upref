@@ -38,7 +38,6 @@ from .legacy import (
 )
 from .prompt import Field, Prompter, collect
 
-
 try:
     __version__ = version("upref")
 except PackageNotFoundError:

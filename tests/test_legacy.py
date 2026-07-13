@@ -2,11 +2,24 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
-from upref import ConfigStore, MigrationError, PromptCancelled
-from upref import legacy
+from upref import (
+    ConfigReadError,
+    ConfigStore,
+    ConfigWriteError,
+    MigrationError,
+    PromptCancelled,
+    legacy,
+)
 from upref._storage import save_yaml
+
+
+class InvalidPath:
+    def __fspath__(self) -> str:
+        raise OSError("invalid path")
 
 
 def test_imports_descriptor_file_without_removing_source(tmp_path):
@@ -87,6 +100,83 @@ def test_raw_description_conversion_supports_nested_values():
     description = legacy.conv_raw_to_description(raw)
 
     assert legacy.conv_description_to_raw(description) == raw
+
+
+def test_v1_path_oriented_helpers_and_invalid_paths(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = tmp_path / "legacy.conf"
+    monkeypatch.setattr(legacy, "legacy_config_path", lambda name: path)
+
+    with pytest.warns(DeprecationWarning):
+        assert legacy.upref_filename("legacy") == str(path)
+    with pytest.warns(DeprecationWarning):
+        assert legacy.save_conf({"value": 1}, path) == {"value": 1}
+    with pytest.warns(DeprecationWarning):
+        assert legacy.load_conf(path) == {"value": 1}
+    with pytest.warns(DeprecationWarning):
+        assert legacy.current_upref("legacy") == {"value": 1}
+    with pytest.warns(DeprecationWarning):
+        assert legacy.load_data("legacy") == {"value": 1}
+    with pytest.warns(DeprecationWarning):
+        legacy.remove_pref("legacy")
+    assert not path.exists()
+
+    with pytest.warns(DeprecationWarning), pytest.raises(ConfigReadError):
+        legacy.load_conf(InvalidPath())
+    with pytest.warns(DeprecationWarning), pytest.raises(ConfigWriteError):
+        legacy.save_conf({}, InvalidPath())
+
+
+def test_v1_pure_compatibility_helpers_return_detached_results() -> None:
+    first = legacy.default_conf()
+    first["__gui__"]["title"] = "Changed"  # type: ignore[index]
+    assert legacy.default_conf()["__gui__"]["title"] == "Personal information"  # type: ignore[index]
+
+    assert legacy.dict_merge({"nested": {"one": 1}}, {"nested": {"two": 2}}) == {
+        "nested": {"one": 1, "two": 2}
+    }
+
+
+def test_descriptor_edge_cases_are_handled() -> None:
+    assert legacy.all_values_are_set({"__gui__": {}, "name": {"value": ""}}) is False
+
+    overlaid = legacy._description_with_saved_values(
+        {"name": "malformed"},
+        {"name": {"value": "saved"}},
+    )
+    assert overlaid == {"name": {"value": "saved"}}
+
+    field = legacy._field_from_descriptor("name", "malformed")
+    assert field.label == "name"
+    assert field.secret is False
+
+
+def test_get_pref_nonmandatory_and_malformed_descriptors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = tmp_path / "preferences.conf"
+    monkeypatch.setattr(legacy, "_path_for", lambda name: path)
+    save_yaml(path, {"saved": {"value": 1}})
+
+    with pytest.warns(DeprecationWarning):
+        assert legacy.get_pref({}, "preferences", mandatory=False) == {"saved": 1}
+
+    path.unlink()
+    monkeypatch.setattr(
+        legacy,
+        "collect",
+        lambda *args, **kwargs: {"name": "collected"},
+    )
+    with pytest.warns(DeprecationWarning):
+        assert legacy.get_pref(
+            {"name": "malformed"},
+            "preferences",
+            interface="tty",
+        ) == {"name": "collected"}
+    assert legacy.load_yaml(path) == {"name": {"value": "collected"}}
 
 
 def test_v1_raw_wrappers_warn_and_use_the_legacy_location(tmp_path, monkeypatch):
@@ -170,3 +260,41 @@ def test_set_pref_supports_nested_raw_values(tmp_path, monkeypatch):
         "database": {"host": "localhost"},
         "enabled": False,
     }
+
+
+def test_description_detection_handles_metadata_only_documents() -> None:
+    assert legacy._looks_like_description({"__gui__": {}}) is False
+
+
+def test_import_propagates_non_missing_read_errors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = ConfigStore("sample", directory=tmp_path / "v2")
+    monkeypatch.setattr(
+        legacy,
+        "load_yaml",
+        lambda *args, **kwargs: (_ for _ in ()).throw(ConfigReadError("denied")),
+    )
+
+    with pytest.raises(ConfigReadError, match="denied"):
+        legacy.import_legacy(store, "source", legacy_directory=tmp_path / "v1")
+
+
+def test_import_wraps_destination_persistence_errors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    legacy_dir = tmp_path / "v1"
+    save_yaml(legacy_dir / "source.conf", {"value": 1})
+    store = ConfigStore("sample", directory=tmp_path / "v2")
+
+    def fail_save(self: ConfigStore, data: object) -> None:
+        raise ConfigWriteError("write denied")
+
+    monkeypatch.setattr(ConfigStore, "save", fail_save)
+
+    with pytest.raises(MigrationError, match="Could not migrate") as caught:
+        legacy.import_legacy(store, "source", legacy_directory=legacy_dir)
+
+    assert isinstance(caught.value.__cause__, ConfigWriteError)

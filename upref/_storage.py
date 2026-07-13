@@ -8,16 +8,15 @@ or an interrupted serialization cannot truncate an existing configuration.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 import os
-from pathlib import Path
 import tempfile
+from collections.abc import Mapping
+from pathlib import Path
 
 import yaml
 
 from ._types import Config, ConfigValue, normalize_config
 from .errors import ConfigFormatError, ConfigReadError, ConfigWriteError
-
 
 PathLike = str | os.PathLike[str]
 

@@ -13,7 +13,6 @@ from typing import TypeAlias, cast
 
 from .errors import ConfigFormatError
 
-
 ConfigScalar: TypeAlias = bool | int | float | str | None
 ConfigValue: TypeAlias = ConfigScalar | list["ConfigValue"] | dict[str, "ConfigValue"]
 Config: TypeAlias = dict[str, ConfigValue]
