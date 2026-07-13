@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# =============================================================================
+#                 Author: Florent TOURNOIS | License: MIT
+# =============================================================================
 """Expose Upref's stable per-user configuration API.
 
 The package-level API centers on :class:`ConfigStore` for explicit YAML

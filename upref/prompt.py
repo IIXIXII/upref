@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# =============================================================================
+#                 Author: Florent TOURNOIS | License: MIT
+# =============================================================================
 """Define the interface-independent interactive collection API.
 
 The collection layer is deliberately separate from :class:`upref.ConfigStore`:
@@ -22,7 +27,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Literal, Protocol, runtime_checkable
+from typing import Literal, Protocol, cast, runtime_checkable
 
 from ._types import Config, ConfigValue, normalize_config
 from .errors import PromptCancelled
@@ -116,6 +121,60 @@ class Prompter(Protocol):
         ...
 
 
+def _validate_interface(
+    interface: object,
+) -> Literal["tty", "gui"] | Prompter:
+    """Validate and narrow an interface value without creating a UI.
+
+    Args:
+        interface: Candidate bundled selector or custom prompter.
+
+    Returns:
+        The validated selector or caller-owned prompter.
+
+    Raises:
+        TypeError: If a non-string value does not implement :class:`Prompter`.
+        ValueError: If a string is neither ``"tty"`` nor ``"gui"``.
+    """
+    if isinstance(interface, str):
+        if interface == "tty":
+            return "tty"
+        if interface == "gui":
+            return "gui"
+        raise ValueError("interface must be 'tty' or 'gui'")
+    if not isinstance(interface, Prompter):
+        raise TypeError(
+            "interface must be 'tty', 'gui', or an object implementing "
+            "the Prompter protocol"
+        )
+    return interface
+
+
+def _validated_schema_items(
+    schema: Mapping[str, Field],
+) -> list[tuple[str, Field]]:
+    """Validate schema entries at runtime and return typed items.
+
+    Args:
+        schema: Candidate mapping from field names to definitions.
+
+    Returns:
+        Schema items in their original iteration order.
+
+    Raises:
+        TypeError: If a key is not a string or a value is not a :class:`Field`.
+    """
+    raw_schema = cast(Mapping[object, object], schema)
+    items: list[tuple[str, Field]] = []
+    for name, field in raw_schema.items():
+        if not isinstance(name, str):
+            raise TypeError("schema keys must be strings")
+        if not isinstance(field, Field):
+            raise TypeError(f"schema entry {name!r} must be a Field")
+        items.append((name, field))
+    return items
+
+
 def _make_prompter(interface: str | Prompter) -> tuple[Prompter, bool]:
     """Resolve an interface selector to a prompter instance.
 
@@ -137,24 +196,17 @@ def _make_prompter(interface: str | Prompter) -> tuple[Prompter, bool]:
         upref.errors.PromptUnavailableError: If the GUI implementation is
             selected but wxPython cannot be imported or initialized.
     """
-    if not isinstance(interface, str):
-        if not isinstance(interface, Prompter):
-            raise TypeError(
-                "interface must be 'tty', 'gui', or an object implementing "
-                "the Prompter protocol"
-            )
-        return interface, False
+    validated = _validate_interface(interface)
+    if not isinstance(validated, str):
+        return validated, False
 
-    if interface == "tty":
+    if validated == "tty":
         from .tty import TTYPrompter
 
         return TTYPrompter(), True
-    if interface == "gui":
-        from .gui import GuiPrompter
+    from .gui import GuiPrompter
 
-        return GuiPrompter(), True
-
-    raise ValueError("interface must be 'tty' or 'gui'")
+    return GuiPrompter(), True
 
 
 def _is_missing(present: bool, value: ConfigValue, field: Field) -> bool:
@@ -297,31 +349,19 @@ def collect(
     if mode not in ("missing", "all"):
         raise ValueError("mode must be 'missing' or 'all'")
 
-    if isinstance(interface, str):
-        if interface not in ("tty", "gui"):
-            raise ValueError("interface must be 'tty' or 'gui'")
-    elif not isinstance(interface, Prompter):
-        raise TypeError(
-            "interface must be 'tty', 'gui', or an object implementing "
-            "the Prompter protocol"
-        )
-
-    for name, field in schema.items():
-        if not isinstance(name, str):
-            raise TypeError("schema keys must be strings")
-        if not isinstance(field, Field):
-            raise TypeError(f"schema entry {name!r} must be a Field")
+    validated_interface = _validate_interface(interface)
+    schema_items = _validated_schema_items(schema)
 
     values = normalize_config({} if initial is None else initial)
     fields_to_ask = [
         (name, field)
-        for name, field in schema.items()
+        for name, field in schema_items
         if mode == "all" or _is_missing(name in values, values.get(name), field)
     ]
     if not fields_to_ask:
         return values
 
-    prompter, owned = _make_prompter(interface)
+    prompter, owned = _make_prompter(validated_interface)
 
     try:
         for name, field in fields_to_ask:

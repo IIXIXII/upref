@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# =============================================================================
+#                 Author: Florent TOURNOIS | License: MIT
+# =============================================================================
 """Public configuration store for Upref v2.
 
 The core module deliberately contains no YAML, GUI, or terminal-specific

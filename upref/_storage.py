@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# =============================================================================
+#                 Author: Florent TOURNOIS | License: MIT
+# =============================================================================
 """Read, atomically write, and delete Upref YAML configuration files.
 
 The persistence boundary accepts only the runtime data model validated by
@@ -84,7 +89,7 @@ def load_yaml(path: PathLike, *, missing_ok: bool = True) -> Config:
 
     try:
         with resolved.open("r", encoding="utf-8") as stream:
-            loaded = yaml.safe_load(stream)
+            loaded: object = yaml.safe_load(stream)
     except FileNotFoundError as error:
         if missing_ok:
             return {}

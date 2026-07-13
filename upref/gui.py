@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# =============================================================================
+#                 Author: Florent TOURNOIS | License: MIT
+# =============================================================================
 """Provide the optional wxPython prompt implementation.
 
 Importing this module does not import wxPython. The optional dependency is

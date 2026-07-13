@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# =============================================================================
+#                 Author: Florent TOURNOIS | License: MIT
+# =============================================================================
 """Define the stable public exception hierarchy raised by :mod:`upref`.
 
 Keeping the exception hierarchy in a dependency-free module lets every layer

@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# =============================================================================
+#                 Author: Florent TOURNOIS | License: MIT
+# =============================================================================
 """Provide temporary v1 compatibility and explicit migration helpers.
 
 Upref v1 mixed interactive field descriptions with persisted values and kept
@@ -18,7 +23,7 @@ from collections.abc import Mapping
 from copy import deepcopy
 from os import PathLike
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, cast
 
 from ._merge import deep_merge
 from ._paths import legacy_config_path
@@ -366,7 +371,7 @@ def _description_with_saved_values(
     return description
 
 
-def _field_from_descriptor(name: str, descriptor: Any) -> Field:
+def _field_from_descriptor(name: str, descriptor: object) -> Field:
     """Convert one permissive v1 descriptor into a v2 :class:`Field`.
 
     Args:
@@ -377,12 +382,13 @@ def _field_from_descriptor(name: str, descriptor: Any) -> Field:
         A required text field with password masking when requested by v1
         ``type`` metadata.
     """
-    if not isinstance(descriptor, Mapping):
-        descriptor = {}
-    field_type = str(descriptor.get("type", "")).strip().upper()
+    values: Mapping[object, object] = {}
+    if isinstance(descriptor, Mapping):
+        values = cast(Mapping[object, object], descriptor)
+    field_type = str(values.get("type", "")).strip().upper()
     return Field(
-        label=str(descriptor.get("label", name)),
-        description=str(descriptor.get("description", "")),
+        label=str(values.get("label", name)),
+        description=str(values.get("description", "")),
         required=True,
         secret=field_type in {"PASSWORD", "PASSWD", "PASS"},
     )

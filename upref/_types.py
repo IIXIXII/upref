@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# =============================================================================
+#                 Author: Florent TOURNOIS | License: MIT
+# =============================================================================
 """Define and validate the values accepted by Upref configurations.
 
 The public type aliases describe the recursive, YAML-safe data model used by
@@ -73,7 +78,8 @@ def _normalize_value(
         return cast(ConfigScalar, value)
 
     if isinstance(value, Mapping):
-        object_id = id(value)
+        mapping = cast(Mapping[object, object], value)
+        object_id = id(mapping)
         current_path = _format_path(path)
         if object_id in active:
             raise ConfigFormatError(
@@ -84,7 +90,7 @@ def _normalize_value(
         active[object_id] = current_path
         try:
             result: Config = {}
-            for key, item in value.items():
+            for key, item in mapping.items():
                 if not isinstance(key, str):
                     raise ConfigFormatError(
                         f"Invalid mapping key at {current_path}: expected str, "
@@ -96,7 +102,8 @@ def _normalize_value(
             active.pop(object_id, None)
 
     if isinstance(value, list):
-        object_id = id(value)
+        sequence = cast(list[object], value)
+        object_id = id(sequence)
         current_path = _format_path(path)
         if object_id in active:
             raise ConfigFormatError(
@@ -108,7 +115,7 @@ def _normalize_value(
         try:
             return [
                 _normalize_value(item, path + (index,), active)
-                for index, item in enumerate(value)
+                for index, item in enumerate(sequence)
             ]
         finally:
             active.pop(object_id, None)
@@ -148,7 +155,8 @@ def normalize_config(data: object) -> Config:
             f"got {type(data).__name__}"
         )
 
-    normalized = _normalize_value(data, (), {})
+    root = cast(Mapping[object, object], data)
+    normalized = _normalize_value(root, (), {})
     # The root check above and _normalize_value's Mapping branch guarantee this.
     assert isinstance(normalized, dict)
     return normalized

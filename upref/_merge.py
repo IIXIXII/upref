@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# =============================================================================
+#                 Author: Florent TOURNOIS | License: MIT
+# =============================================================================
 """Provide pure, recursive merging for Upref configuration mappings.
 
 Mappings are merged by key, while lists and scalar values are replaced as

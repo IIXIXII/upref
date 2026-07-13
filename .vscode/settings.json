@@ -12,14 +12,6 @@
     "pylint.enabled": false,
     "isort.check": false,
     "isort.serverEnabled": false,
-    "[python]": {
-        "editor.defaultFormatter": "charliermarsh.ruff",
-        "editor.formatOnSave": true,
-        "editor.codeActionsOnSave": {
-            "source.fixAll.ruff": "explicit",
-            "source.organizeImports.ruff": "explicit"
-        }
-    },
     "files.exclude": {
         "**/.git": true,
         "**/.venv": true,

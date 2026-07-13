@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# =============================================================================
+#                 Author: Florent TOURNOIS | License: MIT
+# =============================================================================
 """Validate names and resolve confined Upref configuration paths.
 
 Names are checked against both POSIX and Windows path rules so configurations
@@ -17,7 +22,7 @@ from .errors import ConfigPathError
 PathLike = str | os.PathLike[str]
 
 
-def _validate_component(value: str, *, label: str) -> str:
+def _validate_component(value: object, *, label: str) -> str:
     """Validate a portable, single-component filename value.
 
     Args:
@@ -91,6 +96,24 @@ def _validate_component(value: str, *, label: str) -> str:
             f"{label} must not be an absolute or drive-qualified path"
         )
 
+    return value
+
+
+def _validate_boolean(value: object, *, label: str) -> bool:
+    """Validate a boolean value received at a runtime API boundary.
+
+    Args:
+        value: Candidate value to validate.
+        label: Human-readable parameter name used in error messages.
+
+    Returns:
+        ``value`` unchanged when it is a boolean.
+
+    Raises:
+        ConfigPathError: If ``value`` is not a boolean.
+    """
+    if not isinstance(value, bool):
+        raise ConfigPathError(f"{label} must be a boolean")
     return value
 
 
@@ -188,8 +211,7 @@ def resolve_config_path(
     filename = _validate_component(filename, label="filename")
     if app_author is not None:
         app_author = _validate_component(app_author, label="app_author")
-    if not isinstance(roaming, bool):
-        raise ConfigPathError("roaming must be a boolean")
+    roaming = _validate_boolean(roaming, label="roaming")
 
     if directory is None:
         try:

@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# =============================================================================
+#                 Author: Florent TOURNOIS | License: MIT
+# =============================================================================
 """Provide the dependency-free terminal prompt implementation.
 
 :class:`TTYPrompter` writes field context to a configurable output function and

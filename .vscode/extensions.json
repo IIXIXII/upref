@@ -2,7 +2,6 @@
     "recommendations": [
         "ms-python.python",
         "ms-python.debugpy",
-        "charliermarsh.ruff",
         "ms-python.mypy-type-checker"
     ],
     "unwantedRecommendations": [
