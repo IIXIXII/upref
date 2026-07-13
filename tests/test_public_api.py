@@ -45,6 +45,6 @@ def test_package_version_has_a_source_tree_fallback(
 
     with monkeypatch.context() as patch:
         patch.setattr(importlib.metadata, "version", missing_distribution)
-        assert importlib.reload(upref).__version__ == "2.0.0"
+        assert importlib.reload(upref).__version__ == "2.0.1"
 
     importlib.reload(upref)
