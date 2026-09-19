@@ -18,6 +18,7 @@ Public API summary
    Field
    Prompter
    collect
+   parse_bool
    UprefError
    ConfigPathError
    ConfigFormatError
@@ -60,6 +61,8 @@ Interactive schema and protocol
    :members:
 
 .. autofunction:: collect
+
+.. autofunction:: parse_bool
 
 Built-in interfaces
 -------------------

@@ -17,6 +17,7 @@ task-oriented guides below for behavioral details and the :doc:`API reference
    readme_link
    concepts
    examples
+   recipes
 
 .. toctree::
    :maxdepth: 2
@@ -28,6 +29,7 @@ task-oriented guides below for behavioral details and the :doc:`API reference
    errors
    security
    migration
+   troubleshooting
 
 .. toctree::
    :maxdepth: 2
@@ -42,6 +44,7 @@ task-oriented guides below for behavioral details and the :doc:`API reference
 
    development
    releasing
+   review
    license_link
 
 Site indices

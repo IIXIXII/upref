@@ -71,6 +71,21 @@ Field options have the following behavior:
      - Receives the parsed value. Returning ``False`` or raising
        :class:`ValueError` displays an error and asks again. Returning ``True``
        or ``None`` accepts the value.
+   * - ``formatter``
+     - Keyword-only callable converting a current value to parser-compatible
+       text. Defaults to ``str``. Built-in interfaces use it for ordinary
+       display, GUI prefill, and optional terminal value reuse; secret values
+       are never passed to it.
+
+Field definitions are checked at construction: labels and descriptions must
+be strings, flags must be booleans, and callbacks must be callable. This catches
+configuration mistakes before a user interface is opened.
+
+Use :func:`~upref.parse_bool` for textual boolean answers, rather than
+``bool`` (which treats every non-empty string, including ``"false"``, as true).
+It accepts ``yes/no``, ``true/false``, ``on/off``, ``y/n``, and ``1/0`` after
+trimming whitespace and ignoring case. Unknown input raises ``ValueError``
+and is therefore retried by ``collect``.
 
 The parser result is validated against the :ref:`configuration value model
 <config-values>`. A parser should raise :class:`ValueError` for user-correctable
@@ -111,6 +126,15 @@ empty dictionaries, and optional empty strings are already populated.
 interface. Keys in ``initial`` that are not in the schema are preserved in
 both modes. The input mapping is never mutated, and the result is detached.
 
+The schema applies to top-level keys; dots in names are literal characters,
+not paths. To edit a nested mapping, collect that section and put the result
+back into the complete configuration before saving. See :doc:`recipes`.
+
+Fields skipped in ``missing`` mode are not parsed or checked by their field
+validators. ``load`` checks the configuration data model, not application
+constraints such as port ranges. Validate loaded settings separately when
+those constraints matter (see the dataclass example in :doc:`recipes`).
+
 When no field needs to be asked, ``collect`` returns immediately and does not
 initialize the selected interface. This permits an application to specify
 ``interface="gui"`` without requiring wxPython when all values are already
@@ -133,6 +157,27 @@ Applications that need direct control can instantiate
 functions. Passing this object as ``interface`` also satisfies the
 :class:`~upref.Prompter` protocol.
 
+The terminal indicates whether a field is required or optional and reminds
+the user how to cancel. To allow Enter to retain a current value:
+
+.. code-block:: python
+
+   from upref import Field, collect, parse_bool
+   from upref.tty import TTYPrompter
+
+   values = collect(
+       {"enabled": Field("Enabled", parser=parse_bool)},
+       {"enabled": False},
+       interface=TTYPrompter(keep_current=True),
+       mode="all",
+   )
+
+Value reuse is opt-in. The formatter produces text which is parsed and
+validated again; ``False`` and ``0`` can be retained. Secret values and
+``None`` are never reused. With the default ``keep_current=False``, Enter
+submits empty text, allowing an optional string to be cleared. With reuse
+enabled, an empty current value still follows the field's required rule.
+
 Graphical interface
 -------------------
 
@@ -149,6 +194,23 @@ Install the optional dependency and select the interface explicitly:
 The GUI uses wxPython modal text-entry dialogs. Cancelling a dialog raises
 :exc:`~upref.PromptCancelled`. If wxPython is missing or cannot initialize a
 GUI, Upref raises :exc:`~upref.PromptUnavailableError`.
+
+Dialogs show required/optional status. For complex values, provide a formatter
+whose output the parser can read; Python's default string representation of
+a list containing booleans or ``None`` is not JSON:
+
+.. code-block:: python
+
+   import json
+
+   json_field = Field(
+       "Options", parser=json.loads, formatter=json.dumps,
+       validator=lambda value: isinstance(value, list),
+   )
+
+Call the GUI from the desktop application's main thread. The automated suite
+uses a wxPython substitute to verify dialog arguments and resource ownership;
+real window rendering should also be checked in a desktop session.
 
 When ``collect`` creates the built-in GUI object, it also closes it. Code that
 passes its own :class:`upref.gui.GuiPrompter` instance owns that instance and

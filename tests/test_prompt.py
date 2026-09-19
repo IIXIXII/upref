@@ -10,7 +10,7 @@ import upref.gui as gui_module
 import upref.prompt as prompt_module
 from upref.errors import PromptCancelled, PromptUnavailableError
 from upref.gui import GuiPrompter
-from upref.prompt import Field, collect
+from upref.prompt import Field, collect, parse_bool
 
 
 class StubPrompter:
@@ -32,6 +32,54 @@ def test_field_is_immutable() -> None:
 
     with pytest.raises(FrozenInstanceError):
         field.label = "Other"  # type: ignore[misc]
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        {"label": 1},
+        {"description": None},
+        {"required": "false"},
+        {"secret": 1},
+        {"parser": None},
+        {"formatter": 42},
+        {"validator": False},
+    ],
+)
+def test_invalid_field_definitions_fail_at_construction(options):
+    with pytest.raises(TypeError, match="Field\\."):
+        Field(**{"label": "Value", **options})
+
+
+@pytest.mark.parametrize("raw", ["yes", "Y", "true", " ON ", "1"])
+def test_parse_bool_true(raw):
+    assert parse_bool(raw) is True
+
+
+@pytest.mark.parametrize("raw", ["no", "N", "false", " OFF ", "0"])
+def test_parse_bool_false(raw):
+    assert parse_bool(raw) is False
+
+
+@pytest.mark.parametrize("raw", ["", "maybe", "2"])
+def test_parse_bool_rejects_unknown_spelling(raw):
+    with pytest.raises(ValueError, match="Enter yes/no"):
+        parse_bool(raw)
+
+
+def test_schema_and_custom_prompter_contract_fail_early():
+    with pytest.raises(TypeError, match="schema must be a mapping"):
+        collect([])
+
+    class BrokenPrompter:
+        ask = 42
+        show_error = "not callable"
+
+    with pytest.raises(TypeError, match="Prompter protocol"):
+        collect({}, interface=BrokenPrompter())
+
+    with pytest.raises(TypeError, match="must return a string or None"):
+        collect({"value": Field("Value")}, interface=StubPrompter([42]))
 
 
 def test_missing_mode_preserves_false_zero_and_optional_empty_string() -> None:
@@ -263,7 +311,7 @@ def test_gui_prompter_uses_fake_wx_and_masks_secret_default(
     dialogs: list[object] = []
     apps: list[object] = []
     messages: list[tuple[object, ...]] = []
-    modal_results = [fake_wx.ID_OK, 0]
+    modal_results = [fake_wx.ID_OK, 0, fake_wx.ID_OK]
 
     class FakeApp:
         def __init__(self, redirect: bool) -> None:
@@ -302,6 +350,13 @@ def test_gui_prompter_uses_fake_wx_and_masks_secret_default(
         "do-not-display",
     )
     cancelled = prompter.ask("attempts", Field("Attempts"), 3)
+    import json
+
+    prompter.ask(
+        "flags",
+        Field("Flags", parser=json.loads, formatter=json.dumps, required=False),
+        [True, None],
+    )
     prompter.show_error("Wrong token")
     assert prompter.__enter__() is prompter
     prompter.__exit__(None, None, None)
@@ -317,6 +372,8 @@ def test_gui_prompter_uses_fake_wx_and_masks_secret_default(
     assert dialogs[0].args[3] == ""  # type: ignore[attr-defined]
     assert dialogs[0].args[4] & fake_wx.TE_PASSWORD  # type: ignore[attr-defined]
     assert dialogs[1].args[3] == "3"  # type: ignore[attr-defined]
+    assert dialogs[2].args[3] == "[true, null]"
+    assert dialogs[2].args[1] == "Flags (optional)"
     assert dialogs[0].destroyed is True  # type: ignore[attr-defined]
     assert messages[0][0] == "Wrong token"
     assert apps[0].destroyed is True  # type: ignore[attr-defined]

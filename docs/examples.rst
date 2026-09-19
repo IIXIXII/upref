@@ -3,15 +3,62 @@
 Examples
 ========
 
-The programs below are complete and runnable from a checkout with the project
-installed in ``.venv``. Except for migration, they write to a distinct
-platform-specific per-user configuration directory, not to the source tree.
+The 16 programs in ``examples`` are complete and runnable from a checkout with
+the project installed in ``.venv``. The nine recipes listed first use memory
+or automatically cleaned temporary directories. The seven persistent examples
+below use distinct per-user configuration locations; migration reads an
+existing historical file and creates a separate v2 file.
 
 Run an example on Windows with:
 
 .. code-block:: console
 
    .\.venv\Scripts\python.exe examples\basic_store.py
+
+Progressive recipes
+-------------------
+
+These examples are explained with full source in :doc:`recipes`. Use the same
+command above with the desired filename. On Linux or macOS, use
+``./.venv/bin/python examples/portable_store.py``.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 17 33 50
+
+   * - Level
+     - Script
+     - Input and file effects
+   * - Simple
+     - ``portable_store.py``
+     - No input; temporary store with defaults and updates.
+   * - Simple
+     - ``boolean_collection.py``
+     - Terminal; boolean and optional text, no file.
+   * - Intermediate
+     - ``edit_settings.py``
+     - Terminal; retain values or edit JSON, no file.
+   * - Intermediate
+     - ``gui_collection.py``
+     - GUI extra required; formatted prefill, no file.
+   * - Intermediate
+     - ``handle_errors.py``
+     - No input; malformed YAML in a temporary directory.
+   * - Advanced
+     - ``nested_collection.py``
+     - Terminal; edit a subsection and save a temporary file.
+   * - Advanced
+     - ``custom_interface.py``
+     - Scripted answers with retries, no file.
+   * - Advanced
+     - ``typed_settings.py``
+     - No input; dataclass validation and a temporary store.
+   * - Advanced
+     - ``schema_upgrade.py``
+     - No input; idempotent transformation of a temporary file.
+
+The remaining examples below progress from simple storage to project setup,
+environment profiles, and migration. Persistent examples print their paths.
 
 Basic storage
 -------------

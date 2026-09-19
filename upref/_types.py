@@ -147,7 +147,7 @@ def normalize_config(data: object) -> Config:
     Raises:
         ConfigFormatError: If the root is not a mapping, a key is not a string,
             a value has an unsupported type, or the object graph contains a
-            container cycle.
+            container cycle or exceeds Python's recursion limit.
     """
     if not isinstance(data, Mapping):
         raise ConfigFormatError(
@@ -156,7 +156,10 @@ def normalize_config(data: object) -> Config:
         )
 
     root = cast(Mapping[object, object], data)
-    normalized = _normalize_value(root, (), {})
+    try:
+        normalized = _normalize_value(root, (), {})
+    except RecursionError as error:
+        raise ConfigFormatError("Configuration nesting is too deep") from error
     # The root check above and _normalize_value's Mapping branch guarantee this.
     assert isinstance(normalized, dict)
     return normalized

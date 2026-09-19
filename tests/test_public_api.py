@@ -21,6 +21,7 @@ def test_v2_symbols_are_exported():
         "ConfigStore",
         "Field",
         "collect",
+        "parse_bool",
         "ConfigFormatError",
         "ConfigReadError",
         "ConfigWriteError",

@@ -15,6 +15,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from os import PathLike
 from pathlib import Path
+from stat import S_ISREG
 
 from ._merge import deep_merge
 from ._paths import resolve_config_path
@@ -125,7 +126,9 @@ class ConfigStore:
             ConfigReadError: If the operating system cannot inspect the path.
         """
         try:
-            return self._path.is_file()
+            return S_ISREG(self._path.stat().st_mode)
+        except (FileNotFoundError, NotADirectoryError):
+            return False
         except OSError as error:
             raise ConfigReadError(
                 f"Unable to inspect configuration file {self._path}: {error}"
@@ -157,7 +160,8 @@ class ConfigStore:
         Raises:
             ConfigReadError: If the file exists but cannot be read.
             ConfigFormatError: If YAML is malformed, is not UTF-8, has a
-                non-mapping root, or contains unsupported values or key types.
+                non-mapping root, duplicate explicit keys, excessive nesting,
+                or unsupported values or key types.
         """
         stored = load_yaml(self._path)
         if defaults is None:

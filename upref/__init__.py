@@ -41,7 +41,7 @@ from .legacy import (
     set_pref,
     upref_filename,
 )
-from .prompt import Field, Prompter, collect
+from .prompt import Field, Prompter, collect, parse_bool
 
 try:
     __version__ = version("upref")
@@ -69,6 +69,7 @@ __all__ = [
     "PromptUnavailableError",
     "UprefError",
     "collect",
+    "parse_bool",
     # Deprecated v1 compatibility API.
     "current_upref",
     "get_pref",

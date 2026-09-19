@@ -1,0 +1,5 @@
+include pytest.ini make.bat .gitattributes
+recursive-include examples *.py *.md
+recursive-include scripts *.py *.ps1
+recursive-include docs *.rst *.md *.py *.css *.png
+prune docs/_build

@@ -86,10 +86,20 @@ def test_repr_contains_application_and_path(tmp_path):
 def test_exists_wraps_filesystem_inspection_errors(tmp_path, monkeypatch):
     store = ConfigStore("sample", directory=tmp_path)
 
-    def fail_is_file(path: Path) -> bool:
+    def fail_stat(path: Path) -> bool:
         raise OSError("inspection failed")
 
-    monkeypatch.setattr(Path, "is_file", fail_is_file)
+    monkeypatch.setattr(Path, "stat", fail_stat)
 
     with pytest.raises(ConfigReadError, match="inspection failed"):
         store.exists()
+
+
+def test_exists_returns_false_for_directory_and_non_directory_parent(tmp_path):
+    store = ConfigStore("sample", directory=tmp_path)
+    store.path.mkdir()
+    assert store.exists() is False
+    store.path.rmdir()
+    child = ConfigStore("child", directory=store.path)
+    store.path.write_text("not a directory", encoding="utf-8")
+    assert child.exists() is False

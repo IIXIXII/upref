@@ -229,6 +229,73 @@ def test_delete_file_reports_whether_file_existed(tmp_path: Path) -> None:
     assert _storage.delete_file(path) is False
 
 
+@pytest.mark.parametrize(
+    "content",
+    [
+        "port: 80\nport: 9000\n",
+        'nested:\n  port: 80\n  "port": 9000\n',
+        "base: &base {port: 80, port: 90}\nserver: {<<: *base}\n",
+        "base: &base {port: 80}\nserver: {<<: *base, <<: *base}\n",
+    ],
+)
+def test_duplicate_yaml_keys_are_rejected_without_changing_file(tmp_path, content):
+    path = tmp_path / "duplicate.yaml"
+    path.write_text(content, encoding="utf-8")
+    original = path.read_bytes()
+    with pytest.raises(ConfigFormatError, match="duplicate mapping key") as caught:
+        _storage.load_yaml(path)
+    assert str(path) in str(caught.value)
+    assert "line" in str(caught.value)
+    assert path.read_bytes() == original
+
+
+def test_yaml_merges_allow_explicit_overrides_and_repeated_aliases(tmp_path):
+    path = tmp_path / "merged.yaml"
+    path.write_text(
+        "base: &base {host: localhost, port: 80}\n"
+        "alternate: &alternate {port: 81, enabled: true}\n"
+        "server: &server {<<: [*base, *alternate], port: 90}\n"
+        "copy: *server\n"
+        "other: {<<: *server, host: example.org}\n",
+        encoding="utf-8",
+    )
+    values = _storage.load_yaml(path)
+    assert values["server"] == {"host": "localhost", "port": 90, "enabled": True}
+    assert values["copy"] == values["server"]
+    assert values["copy"] is not values["server"]
+    assert values["other"] == {"host": "example.org", "port": 90, "enabled": True}
+
+
+@pytest.mark.parametrize("content", ["date: 2026-02-30", "number: !!int invalid"])
+def test_invalid_yaml_scalar_is_a_format_error(tmp_path, content):
+    path = tmp_path / "invalid.yaml"
+    path.write_text(content, encoding="utf-8")
+    with pytest.raises(ConfigFormatError, match="Invalid YAML value"):
+        _storage.load_yaml(path)
+
+
+def test_excessively_nested_yaml_is_a_format_error(tmp_path):
+    path = tmp_path / "deep.yaml"
+    path.write_text("items: " + "[" * 2000 + "0" + "]" * 2000, encoding="utf-8")
+    with pytest.raises(ConfigFormatError, match="excessive nesting"):
+        _storage.load_yaml(path)
+
+
+def test_serializer_recursion_preserves_existing_file(tmp_path):
+    path = tmp_path / "config.yaml"
+    _storage.save_yaml(path, {"keep": "original"})
+    original = path.read_bytes()
+    data = {}
+    for _ in range(400):
+        data = {"child": data}
+    # Normalization can succeed before the more deeply recursive YAML dumper fails.
+    _storage.normalize_config(data)
+    with pytest.raises(ConfigFormatError, match="Unable to serialize"):
+        _storage.save_yaml(path, data)
+    assert path.read_bytes() == original
+    assert list(tmp_path.glob("*.tmp")) == []
+
+
 def test_invalid_delete_path_and_delete_errors_are_wrapped(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

@@ -32,8 +32,9 @@ Exception hierarchy
      - An unsafe application name or filename, a relative explicit directory,
        or a path that escapes its directory.
    * - :exc:`~upref.ConfigFormatError`
-     - Invalid YAML or UTF-8, a non-mapping root, a non-string key, a cyclic
-       value, or an unsupported Python value.
+     - Invalid YAML or UTF-8, duplicate explicit keys, excessive nesting,
+       a non-mapping root, a non-string key, a cyclic value, or an unsupported
+       Python value.
    * - :exc:`~upref.ConfigReadError`
      - A filesystem error while opening or reading configuration.
    * - :exc:`~upref.ConfigWriteError`
@@ -95,6 +96,8 @@ Some API misuse raises standard exceptions rather than an ``UprefError``:
 * a non-string schema key, a schema value that is not :class:`~upref.Field`,
   or an object that does not implement :class:`~upref.Prompter` raises
   :class:`TypeError`;
+* an invalid field option, a non-mapping schema, non-callable prompter methods,
+  or an ``ask`` result other than a string or ``None`` raises :class:`TypeError`;
 * a parser or validator :class:`ValueError` is treated as correctable input
   and causes another prompt;
 * asking through or reporting an error with a closed

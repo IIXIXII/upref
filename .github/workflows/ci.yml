@@ -169,6 +169,23 @@ jobs:
         run: python -m build
       - name: Check distribution metadata
         run: python -m twine check dist/*
+      - name: Verify source distribution contents
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import tarfile
+
+          with tarfile.open(next(Path("dist").glob("*.tar.gz"))) as archive:
+              names = {name.partition("/")[2] for name in archive.getnames()}
+          required = {"pytest.ini", "scripts/add_license_headers.py", "docs/index.rst"}
+          required.update(path.as_posix() for path in Path("examples").glob("*.*"))
+          missing = required - names
+          if missing:
+              raise SystemExit(f"Missing source distribution files: {sorted(missing)}")
+          if any(name.startswith("docs/_build/") for name in names):
+              raise SystemExit("Generated documentation must not enter the source archive")
+          PY
       - name: Test the wheel in a clean environment
         shell: bash
         run: |

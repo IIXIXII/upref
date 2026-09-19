@@ -105,3 +105,11 @@ def test_normalize_config_rejects_a_list_cycle_with_path() -> None:
 
     with pytest.raises(ConfigFormatError, match=r"\$\['items'\]\[0\]"):
         normalize_config({"items": cyclic})
+
+
+def test_excessively_nested_data_is_a_format_error():
+    nested = {}
+    for _ in range(2000):
+        nested = {"child": nested}
+    with pytest.raises(ConfigFormatError, match="nesting is too deep"):
+        normalize_config(nested)

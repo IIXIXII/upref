@@ -17,6 +17,7 @@ import os
 import tempfile
 from collections.abc import Mapping
 from pathlib import Path
+from typing import TextIO
 
 import yaml
 
@@ -24,6 +25,41 @@ from ._types import Config, ConfigValue, normalize_config
 from .errors import ConfigFormatError, ConfigReadError, ConfigWriteError
 
 PathLike = str | os.PathLike[str]
+
+
+class _ConfigLoader(yaml.SafeLoader):
+    """Reject duplicate explicit keys while preserving YAML merge semantics."""
+
+    def __init__(self, stream: TextIO) -> None:
+        """Track checked nodes because aliases may revisit flattened mappings."""
+        super().__init__(stream)
+        self._checked_mappings: set[yaml.MappingNode] = set()
+
+    def flatten_mapping(self, node: yaml.MappingNode) -> None:
+        """Check explicit keys before recursively resolving merge directives."""
+        if node in self._checked_mappings:
+            return
+        self._checked_mappings.add(node)
+        seen: set[tuple[str, str]] = set()
+        for key_node, _ in node.value:
+            # Merge keys are directives; their inherited keys may be overridden.
+            if key_node.tag not in {"tag:yaml.org,2002:str", "tag:yaml.org,2002:merge"}:
+                raise yaml.constructor.ConstructorError(
+                    "while reading a configuration mapping",
+                    node.start_mark,
+                    "expected a string mapping key",
+                    key_node.start_mark,
+                )
+            key = (key_node.tag, key_node.value)
+            if key in seen:
+                raise yaml.constructor.ConstructorError(
+                    "while reading a configuration mapping",
+                    node.start_mark,
+                    f"duplicate mapping key {key_node.value!r}",
+                    key_node.start_mark,
+                )
+            seen.add(key)
+        super().flatten_mapping(node)
 
 
 def _display_path(path: PathLike) -> Path:
@@ -89,7 +125,15 @@ def load_yaml(path: PathLike, *, missing_ok: bool = True) -> Config:
 
     try:
         with resolved.open("r", encoding="utf-8") as stream:
-            loaded: object = yaml.safe_load(stream)
+            # Keep decoding/construction errors separate from filesystem errors.
+            try:
+                loaded: object = yaml.load(stream, Loader=_ConfigLoader)
+            except UnicodeDecodeError:
+                raise
+            except (ValueError, OverflowError, RecursionError) as error:
+                raise ConfigFormatError(
+                    f"Invalid YAML value or excessive nesting in {resolved}: {error}"
+                ) from error
     except FileNotFoundError as error:
         if missing_ok:
             return {}
@@ -164,7 +208,7 @@ def save_yaml(path: PathLike, data: Mapping[str, ConfigValue]) -> None:
             sort_keys=False,
             default_flow_style=False,
         )
-    except yaml.YAMLError as error:
+    except (yaml.YAMLError, ValueError, OverflowError, RecursionError) as error:
         raise ConfigFormatError(
             f"Unable to serialize configuration data for {resolved}: {error}"
         ) from error

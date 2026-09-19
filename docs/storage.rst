@@ -39,10 +39,16 @@ normalized to the :ref:`supported value model <config-values>`. Invalid YAML,
 invalid UTF-8, a non-mapping root, and non-string keys are reported rather than
 silently replaced.
 
-PyYAML accepts duplicate mapping keys and keeps the last occurrence. Upref
-does not currently add a duplicate-key check, so applications that permit
-manual editing should treat duplicate keys as ambiguous and may validate them
-with a stricter YAML loader before calling Upref.
+Duplicate explicit mapping keys are rejected at every nesting level with
+:exc:`~upref.ConfigFormatError`, including the filename, line, and column.
+Correct the duplicate before retrying; the file is left untouched. YAML merge
+directives (``<<``) remain supported: inherited defaults may be overridden by
+explicit keys, and the first mapping in a merge sequence takes precedence.
+
+Invalid YAML scalar values, such as an impossible calendar date, and excessive
+nesting also raise :exc:`~upref.ConfigFormatError`. Quote date-like text when
+you intend to store a string. YAML's implicit boolean resolution also applies:
+quote keys such as ``"on"`` or ``"yes"`` so they remain string keys.
 
 Using defaults
 ~~~~~~~~~~~~~~

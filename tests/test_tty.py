@@ -28,6 +28,7 @@ def test_regular_field_shows_context_and_current_value() -> None:
         "Server URL",
         "Base endpoint",
         "Current value: https://old.example",
+        "Required; Ctrl+C cancels.",
     ]
     assert prompts == ["> "]
 
@@ -104,3 +105,67 @@ def test_show_error_has_a_clear_prefix() -> None:
     prompter.show_error("must be positive")
 
     assert output == ["Error: must be positive"]
+
+
+@pytest.mark.parametrize("current", [False, 0, "", [1, 2]])
+def test_enter_can_keep_a_formatted_current_value(current) -> None:
+    import json
+
+    from upref import collect
+
+    output: list[str] = []
+    prompter = TTYPrompter(
+        input_func=lambda prompt: "", print_func=output.append, keep_current=True
+    )
+    result = collect(
+        {"value": Field("Value", parser=json.loads, formatter=json.dumps)},
+        {"value": current},
+        interface=prompter,
+        mode="all",
+    )
+    assert result == {"value": current}
+    assert "Enter keeps the current value; Ctrl+C cancels." in output
+
+
+def test_keep_current_still_validates_reused_input() -> None:
+    from upref import collect
+
+    answers = iter(["", "8"])
+    output: list[str] = []
+    prompter = TTYPrompter(
+        input_func=lambda prompt: next(answers),
+        print_func=output.append,
+        keep_current=True,
+    )
+    result = collect(
+        {"value": Field("Value", parser=int, validator=lambda value: value == 8)},
+        {"value": 4},
+        interface=prompter,
+        mode="all",
+    )
+    assert result == {"value": 8}
+    assert "Error: Invalid value for Value" in output
+
+
+def test_empty_optional_input_and_secret_are_never_reused_by_default() -> None:
+    output: list[str] = []
+    prompter = TTYPrompter(input_func=lambda prompt: "", print_func=output.append)
+    assert prompter.ask("note", Field("Note", required=False), "old") == ""
+    assert "Optional; Enter submits empty text; Ctrl+C cancels." in output
+
+    prompter = TTYPrompter(
+        getpass_func=lambda prompt: "", print_func=output.append, keep_current=True
+    )
+
+    def forbidden_formatter(value):
+        raise AssertionError("Secret formatter must not run")
+
+    assert (
+        prompter.ask(
+            "token",
+            Field("Token", secret=True, formatter=forbidden_formatter),
+            "secret",
+        )
+        == ""
+    )
+    assert "secret" not in "\n".join(output)

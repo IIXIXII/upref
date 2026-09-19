@@ -63,6 +63,9 @@ config = store.update({
 ```
 
 Nested dictionaries are merged. Lists and scalar values are replaced.
+Duplicate explicit YAML keys are rejected with a file location instead of
+silently discarding earlier values. YAML merge directives may still provide
+defaults that explicit keys override.
 `store.exists()` checks for the file, while `store.delete()` removes only that
 file and reports whether it existed.
 
@@ -142,6 +145,32 @@ In `missing` mode, absent values, `None`, and required empty strings are
 requested. `False` and `0` already count as values. Use `mode="all"` to ask
 for every field, or `interface="gui"` after installing `upref[gui]`.
 
+For boolean input, use the public `parse_bool` parser; it accepts `yes/no`,
+`true/false`, `on/off`, `y/n`, and `1/0`, ignoring case and whitespace.
+Python's `bool("false")` returns `True` and is unsuitable for this purpose.
+
+```python
+from upref import Field, collect, parse_bool
+from upref.tty import TTYPrompter
+
+values = collect(
+    {"enabled": Field("Enable notifications", parser=parse_bool)},
+    initial={"enabled": False},
+    interface=TTYPrompter(keep_current=True),
+    mode="all",
+)
+```
+
+With `keep_current=True`, Enter reuses a current non-secret value and runs it
+through the parser and validator again. By default, blank input remains blank.
+For structured input, pair a parser with a compatible keyword-only formatter:
+`Field("Tags", parser=json.loads, formatter=json.dumps)` (after `import json`).
+The GUI uses this formatter to prefill existing values correctly.
+
+`collect` validates newly entered values. Existing values skipped in `missing`
+mode are not passed through field validators; validate application constraints
+after loading when stored files may have been edited manually.
+
 ## Storage guarantees and limits
 
 Upref writes UTF-8 YAML to a temporary file in the destination directory,
@@ -183,19 +212,34 @@ reference in Upref.
 ## Documentation and examples
 
 The complete user guide and API reference are available on
-[Read the Docs](https://upref.readthedocs.io/). Runnable examples live in
-[`examples`](https://github.com/IIXIXII/upref/tree/master/examples):
+[Read the Docs](https://upref.readthedocs.io/). The
+[example catalog](docs/examples.rst) lists 16 runnable programs by difficulty,
+input method, and file effects. Start with these:
 
-- `basic_store.py` covers a save/load cycle;
-- `defaults_and_update.py` covers defaults, recursive updates, and deletion;
-- `project_variables.py` collects required variables for one project;
-- `environment_profiles.py` selects profiles with temporary environment overrides;
-- `multiple_projects.py` stores independent settings for related projects;
-- `tty_collection.py` collects missing values without a GUI;
-- `migrate_v1.py` imports a historical configuration.
+| Level | Example | What it demonstrates |
+| --- | --- | --- |
+| Simple | `portable_store.py` | Defaults, save/load, and updates in a temporary directory |
+| Simple | `boolean_collection.py` | Boolean parsing, optional input, and cancellation |
+| Intermediate | `edit_settings.py` | Enter to keep values and editable JSON lists |
+| Intermediate | `gui_collection.py` | GUI ownership, formatted prefill, and cancellation |
+| Intermediate | `handle_errors.py` | Reporting malformed YAML while retaining the file |
+| Advanced | `nested_collection.py` | Editing a subsection before an explicit save |
+| Advanced | `custom_interface.py` | A deterministic custom prompter with validation retries |
+| Advanced | `typed_settings.py` | Application validation with a dataclass |
+| Advanced | `schema_upgrade.py` | An idempotent application schema migration |
 
-Except for the migration example, these programs use the platform's per-user
-configuration directory. They do not create files in the repository.
+The new demonstrations use memory or automatically cleaned temporary
+directories. Earlier examples that demonstrate persistent settings use named
+per-user directories; their effects are listed in the catalog. Run examples
+from an installed checkout (`python -m pip install -e .`):
+
+```console
+python examples/portable_store.py
+python examples/custom_interface.py
+```
+
+See also the [troubleshooting guide](docs/troubleshooting.rst) and the
+[code review and compatibility notes](docs/review.rst).
 
 ## Development with `.venv`
 

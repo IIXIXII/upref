@@ -89,8 +89,19 @@ percent. Reproduce that gate locally with:
 
    .\.venv\Scripts\python.exe -m pytest --cov=upref --cov-report=term-missing
 
+Behavioral checks matter in addition to statement coverage. ``test_examples.py``
+runs storage and advanced recipes in isolated directories, supplies deterministic
+terminal answers, and verifies cancellation without saving. Tests for GUI
+arguments and lifecycle use a wxPython substitute and do not require a display.
+After changing GUI presentation, also run ``examples/gui_collection.py`` in a
+desktop session with the GUI extra installed to check actual rendering.
+
 Documentation workflow
 ----------------------
+
+The source distribution includes documentation, examples, and test support
+files through ``MANIFEST.in``. Generated HTML is excluded. The packaging job
+checks archive contents so tests and examples remain usable outside Git.
 
 User guides live in ``docs/*.rst``. ``docs/readme_link.md`` includes the root
 README through MyST, keeping installation and quickstart content in one

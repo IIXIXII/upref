@@ -43,6 +43,8 @@ class TTYPrompter:
         input_func: ReadFunction | None = None,
         getpass_func: ReadFunction | None = None,
         print_func: PrintFunction | None = None,
+        *,
+        keep_current: bool = False,
     ) -> None:
         """Initialize a terminal prompter.
 
@@ -54,6 +56,10 @@ class TTYPrompter:
                 :func:`getpass.getpass`.
             print_func: Function used to display labels, descriptions, current
                 values, and errors. Defaults to :func:`print`.
+            keep_current: Let Enter reuse a non-secret, non-None current value
+                formatted by ``Field.formatter``. The collection layer still
+                parses and validates it. Defaults to false so blank input
+                retains its original meaning, including clearing optional text.
 
         Returns:
             None.
@@ -61,6 +67,7 @@ class TTYPrompter:
         self._input = builtins.input if input_func is None else input_func
         self._getpass = getpass.getpass if getpass_func is None else getpass_func
         self._print = builtins.print if print_func is None else print_func
+        self._keep_current = keep_current
 
     def ask(
         self,
@@ -73,7 +80,9 @@ class TTYPrompter:
         The field label and optional description are displayed first. A
         non-``None`` current value is also displayed for ordinary fields.
         Secret fields instead use the injected password reader and never show
-        the current value. The returned secret is nevertheless plaintext.
+        or format the current value. Ordinary values use ``Field.formatter``.
+        When ``keep_current`` is enabled, blank input returns that formatted
+        current text if available. The returned secret is nevertheless plaintext.
 
         Args:
             name: Configuration key, used as the label when ``field.label`` is
@@ -96,14 +105,27 @@ class TTYPrompter:
         self._print(field.label or name)
         if field.description:
             self._print(field.description)
+        current_text = None
         if current is not None and not field.secret:
-            self._print(f"Current value: {current}")
+            current_text = field.formatter(current)
+            self._print(f"Current value: {current_text}")
+
+        reuse_current = self._keep_current and current_text is not None
+        if reuse_current:
+            self._print("Enter keeps the current value; Ctrl+C cancels.")
+        elif field.required:
+            self._print("Required; Ctrl+C cancels.")
+        else:
+            self._print("Optional; Enter submits empty text; Ctrl+C cancels.")
 
         reader = self._getpass if field.secret else self._input
         try:
-            return reader("> ")
+            raw = reader("> ")
         except (EOFError, KeyboardInterrupt):
             return None
+        if raw == "" and reuse_current:
+            return current_text
+        return raw
 
     def show_error(self, message: str) -> None:
         """Display a conversion or validation error with a clear prefix.

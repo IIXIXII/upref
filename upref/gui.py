@@ -84,7 +84,8 @@ class GuiPrompter:
     ) -> str | None:
         """Show a modal text-entry dialog for one field.
 
-        Ordinary fields are prefilled with a non-``None`` current value.
+        Ordinary fields are prefilled using ``Field.formatter`` with a
+        non-``None`` current value.
         Secret fields use wxPython's password style and deliberately start
         empty, so the current secret is neither displayed nor copied into the
         widget. Any entered secret is still returned as plaintext. The dialog
@@ -113,13 +114,13 @@ class GuiPrompter:
 
         wx = self._wx
         label = field.label or name
-        message = label
+        message = f"{label} ({'required' if field.required else 'optional'})"
         if field.description:
-            message = f"{label}\n\n{field.description}"
+            message += f"\n\n{field.description}"
 
         default_value = ""
         if current is not None and not field.secret:
-            default_value = str(current)
+            default_value = field.formatter(current)
 
         style = wx.OK | wx.CANCEL
         if field.secret:

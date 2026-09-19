@@ -27,6 +27,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from typing import Literal, Protocol, cast, runtime_checkable
 
 from ._types import Config, ConfigValue, normalize_config
@@ -35,6 +36,29 @@ from .errors import PromptCancelled
 Parser = Callable[[str], ConfigValue]
 Validator = Callable[[ConfigValue], bool | None]
 PromptMode = Literal["missing", "all"]
+
+
+def parse_bool(raw: str) -> bool:
+    """Parse yes/no, true/false, on/off, or 1/0, ignoring case and whitespace.
+
+    Unlike ``bool(text)``, this function interprets the text's meaning.
+    Single-letter ``y`` and ``n`` are also accepted.
+
+    Args:
+        raw: Text supplied by a prompter or environment variable.
+
+    Returns:
+        The boolean represented by the input.
+
+    Raises:
+        ValueError: If the text is not a recognized boolean spelling.
+    """
+    normalized = raw.strip().lower()
+    if normalized in {"1", "true", "yes", "y", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "n", "off"}:
+        return False
+    raise ValueError("Enter yes/no, true/false, on/off, or 1/0")
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +89,10 @@ class Field:
         validator: Optional callable checking the parsed value. Returning
             ``False`` or raising :class:`ValueError` rejects the value and
             retries the prompt.
+        formatter: Keyword-only callable converting an existing value into
+            text understood by ``parser``. Used by bundled interfaces for
+            display, GUI prefill, and optional terminal value reuse. Defaults
+            to :class:`str`; use e.g. ``json.dumps`` with ``json.loads``.
     """
 
     label: str
@@ -73,6 +101,21 @@ class Field:
     secret: bool = False
     parser: Parser = str
     validator: Validator | None = None
+    formatter: Callable[[ConfigValue], str] = dataclass_field(default=str, kw_only=True)
+
+    def __post_init__(self) -> None:
+        """Reject malformed field definitions before opening an interface."""
+        for name in ("label", "description"):
+            if not isinstance(getattr(self, name), str):
+                raise TypeError(f"Field.{name} must be a string")
+        for name in ("required", "secret"):
+            if not isinstance(getattr(self, name), bool):
+                raise TypeError(f"Field.{name} must be a boolean")
+        for name in ("parser", "formatter"):
+            if not callable(getattr(self, name)):
+                raise TypeError(f"Field.{name} must be callable")
+        if self.validator is not None and not callable(self.validator):
+            raise TypeError("Field.validator must be callable or None")
 
 
 @runtime_checkable
@@ -142,7 +185,9 @@ def _validate_interface(
         if interface == "gui":
             return "gui"
         raise ValueError("interface must be 'tty' or 'gui'")
-    if not isinstance(interface, Prompter):
+    if not isinstance(interface, Prompter) or not all(
+        callable(getattr(interface, name)) for name in ("ask", "show_error")
+    ):
         raise TypeError(
             "interface must be 'tty', 'gui', or an object implementing "
             "the Prompter protocol"
@@ -164,6 +209,8 @@ def _validated_schema_items(
     Raises:
         TypeError: If a key is not a string or a value is not a :class:`Field`.
     """
+    if not isinstance(schema, Mapping):
+        raise TypeError("schema must be a mapping")
     raw_schema = cast(Mapping[object, object], schema)
     items: list[tuple[str, Field]] = []
     for name, field in raw_schema.items():
@@ -264,6 +311,8 @@ def _parse_value(
         raw = prompter.ask(name, field, current)
         if raw is None:
             raise PromptCancelled(f"Input cancelled while asking for {name!r}")
+        if not isinstance(raw, str):
+            raise TypeError("Prompter.ask() must return a string or None")
 
         if field.required and raw == "":
             prompter.show_error(f"{field.label or name} is required")
@@ -332,9 +381,10 @@ def collect(
         keys and all successfully collected values.
 
     Raises:
-        TypeError: If schema keys are not strings, schema values are not
+        TypeError: If schema is not a mapping, schema keys are not strings, values are not
             :class:`Field` instances, or a non-string ``interface`` does not
-            implement :class:`Prompter`.
+            implement :class:`Prompter` with callable methods, or ``ask``
+            returns neither text nor ``None``.
         ValueError: If ``mode`` or a string ``interface`` selector is invalid.
         PromptCancelled: If the user cancels any requested field. Partial
             results are discarded and ``initial`` remains unchanged.
@@ -375,4 +425,4 @@ def collect(
                 close()
 
 
-__all__ = ["Field", "Prompter", "PromptMode", "collect"]
+__all__ = ["Field", "Prompter", "PromptMode", "collect", "parse_bool"]

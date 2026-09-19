@@ -1,16 +1,6 @@
 """Collect and persist the variables required to work on one project."""
 
-from upref import ConfigStore, ConfigValue, Field, PromptCancelled, collect
-
-
-def parse_boolean(raw: str) -> bool:
-    """Parse a human-friendly boolean entered in the terminal."""
-    normalized = raw.strip().lower()
-    if normalized in {"1", "true", "yes", "y", "on"}:
-        return True
-    if normalized in {"0", "false", "no", "n", "off"}:
-        return False
-    raise ValueError("Enter yes/no, true/false, on/off, or 1/0")
+from upref import ConfigStore, ConfigValue, Field, PromptCancelled, collect, parse_bool
 
 
 def is_non_empty_string(value: ConfigValue) -> bool:
@@ -42,7 +32,7 @@ schema = {
     ),
     "run_tests_before_build": Field(
         "Run tests before building",
-        parser=parse_boolean,
+        parser=parse_bool,
     ),
 }
 

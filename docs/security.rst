@@ -62,11 +62,13 @@ Resource limits and untrusted files
 
 Upref is designed for small, local application configuration files. It does
 not impose a byte-size, nesting-depth, alias-count, CPU, or memory limit before
-or during YAML parsing. ``yaml.safe_load`` prevents construction of arbitrary
-Python objects, but it is not a denial-of-service boundary. Alias-heavy or
+or during YAML parsing. Upref's loader subclasses ``yaml.SafeLoader`` to reject
+duplicate keys while preventing construction of arbitrary Python objects,
+but it is not a denial-of-service boundary. Alias-heavy or
 deeply nested attacker-controlled YAML can exhaust resources or exceed
 Python's recursion limit, especially because normalization detaches repeated
-containers.
+containers. Recursion failures during parsing, normalization, and serialization are reported
+as ``ConfigFormatError``; this error conversion is not a resource limit.
 
 An application that accepts configuration from an untrusted party should
 enforce an input-size limit before loading, validate an application-specific
