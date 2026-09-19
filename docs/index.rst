@@ -44,6 +44,7 @@ task-oriented guides below for behavioral details and the :doc:`API reference
 
    development
    releasing
+   changelog
    review
    license_link
 

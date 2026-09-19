@@ -47,7 +47,7 @@ try:
     __version__ = version("upref")
 except PackageNotFoundError:
     # Source trees that are not installed still expose a useful v2 version.
-    __version__ = "2.0.1"
+    __version__ = "2.1.0"
 
 __author__ = "Florent Tournois"
 __copyright__ = "Copyright 2018-2026, Florent Tournois"
