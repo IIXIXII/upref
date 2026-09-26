@@ -208,14 +208,16 @@ def test_yaml_serialization_errors_are_wrapped(
         _storage.save_yaml(tmp_path / "config.yaml", {"value": 1})
 
 
-def test_posix_save_sets_private_permissions(
+@pytest.mark.parametrize("os_name", ["posix", "nt"])
+def test_save_sets_private_permissions_only_on_posix(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    os_name: str,
 ) -> None:
     chmod_calls: list[tuple[Path, int]] = []
 
-    class PosixOsProxy:
-        name = "posix"
+    class OsProxy:
+        name = os_name
         fsync = staticmethod(os.fsync)
         replace = staticmethod(os.replace)
 
@@ -223,12 +225,16 @@ def test_posix_save_sets_private_permissions(
         def chmod(path: Path, mode: int) -> None:
             chmod_calls.append((path, mode))
 
-    monkeypatch.setattr(_storage, "os", PosixOsProxy)
+    monkeypatch.setattr(_storage, "os", OsProxy)
     path = tmp_path / "config.yaml"
 
     _storage.save_yaml(path, {"private": True})
 
-    assert chmod_calls[0][1] == 0o600
+    if os_name == "posix":
+        assert len(chmod_calls) == 1
+        assert chmod_calls[0][1] == 0o600
+    else:
+        assert chmod_calls == []
     assert _storage.load_yaml(path) == {"private": True}
 
 

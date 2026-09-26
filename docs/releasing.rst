@@ -38,7 +38,7 @@ Preparing a release
 -------------------
 
 Release tags use a ``v`` prefix while Python package metadata does not. For
-example, package version ``2.1.0`` is released with tag ``v2.1.0``.
+example, package version ``2.2.0`` is released with tag ``v2.2.0``.
 
 #. Update ``project.version`` in ``pyproject.toml`` and the source-tree fallback
    ``upref.__version__`` in ``upref/__init__.py`` to the same PEP 440 version.
@@ -67,8 +67,8 @@ example, package version ``2.1.0`` is released with tag ``v2.1.0``.
 
    .. code-block:: console
 
-      git tag -a v2.1.0 -m "Release v2.1.0"
-      git push origin v2.1.0
+      git tag -a v2.2.0 -m "Release v2.2.0"
+      git push origin v2.2.0
 
 The release workflow rejects a tag that does not match ``project.version``,
 does not identify the checked-out commit, or does not belong to ``master``.

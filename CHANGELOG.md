@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.2.0 - 2026-09-26
 
 ### Added
 
@@ -30,6 +30,17 @@
   explicit conversion; normalized key collisions are rejected.
 - Measure branch coverage as well as statement coverage, retaining the 100%
   gate and covering application reuse and pre-write failures.
+- Exercise POSIX and Windows permission branches on every platform so the
+  coverage gate behaves consistently on Linux, macOS, and Windows.
+
+### Compatibility
+
+- Python 3.10 and later remain supported, with no new runtime dependency.
+- Existing migration calls retain their behavior; format selection and previews
+  are optional. Deprecated v1 wrappers remain available throughout 2.x.
+- Malformed YAML keys and invalid configuration directories now consistently
+  raise the documented configuration exceptions. Duplicate normalized keys are
+  rejected instead of silently replacing an existing value.
 
 ## 2.1.0
 
