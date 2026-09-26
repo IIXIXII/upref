@@ -22,7 +22,6 @@
                 "pytest",
                 "-p",
                 "no:cacheprovider",
-                "--basetemp=.pytest_tmp",
                 "tests"
             ],
             "options": {

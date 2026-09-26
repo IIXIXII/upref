@@ -76,11 +76,16 @@ Equivalent tools can be run directly through the environment interpreter:
 
 .. code-block:: console
 
-   .\.venv\Scripts\python.exe -m pytest --basetemp=.pytest_tmp
+   .\.venv\Scripts\python.exe -m pytest
    .\.venv\Scripts\python.exe -m ruff format --check upref tests examples scripts docs\conf.py
    .\.venv\Scripts\python.exe -m ruff check upref tests examples scripts docs\conf.py
    .\.venv\Scripts\python.exe -m mypy upref examples
    .\.venv\Scripts\python.exe -m sphinx -E -a -W --keep-going -b html docs docs\_build\html
+
+Pytest manages temporary directories separately for each user and test run.
+Avoid forcing a shared ``--basetemp`` when running tests from different Windows
+accounts: directories created by an isolated tool account may be inaccessible
+to your editor.
 
 Continuous integration measures statement and branch coverage and requires
 100 percent. Reproduce that gate locally with:
@@ -122,6 +127,29 @@ CI also runs the ordinary suite on Python 3.10 with ``platformdirs==4.0.0`` and
 job and release workflow invoke ``scripts/check_installed_package.py`` using
 Python's isolated mode in a clean environment: it checks packaged resources
 and the save/load/update/delete cycle without importing the checkout.
+
+VS Code tests
+-------------
+
+After creating ``.venv``, open the command palette and run
+``Python: Select Interpreter``. On Windows, choose
+``.venv\Scripts\python.exe``; on Linux and macOS, choose ``.venv/bin/python``.
+If it is missing from the list, use ``Enter interpreter path...``.
+VS Code remembers this selection; changing ``python.defaultInterpreterPath``
+does not replace a previously selected interpreter.
+
+Use ``Test: Refresh Tests`` to discover tests, then run them from the Testing
+view. Refreshing only lists tests and does not execute them.
+The workspace passes ``--cov-fail-under=0`` to pytest so discovery and individual
+test runs do not fail the full-suite coverage requirement. Coverage remains
+available, including through ``Run Tests with Coverage``.
+The VS Code ``Test`` task, ``make.bat test``, direct pytest runs, and CI still
+require 100 percent coverage.
+
+If the Python output reports ``No module named pytest``, check the selected
+interpreter before installing dependencies again. ``SKIPPED`` results are
+expected for native GUI tests unless explicitly enabled, POSIX-only checks on
+Windows, and symbolic-link tests when the account cannot create links.
 
 Branch maintenance with Git Bonsai
 ----------------------------------

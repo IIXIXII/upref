@@ -71,7 +71,7 @@ if not exist "%VENV_PYTHON%" (
     >&2 echo Run "make.bat setup" first.
     exit /b 1
 )
-"%VENV_PYTHON%" -m pytest --basetemp=.pytest_tmp
+"%VENV_PYTHON%" -m pytest
 exit /b %errorlevel%
 
 :action_check

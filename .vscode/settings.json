@@ -11,6 +11,7 @@
     "python.testing.pytestArgs": [
         "-p",
         "no:cacheprovider",
+        "--cov-fail-under=0",
         "tests"
     ],
     "pylint.enabled": false,
