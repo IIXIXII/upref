@@ -44,6 +44,8 @@ task-oriented guides below for behavioral details and the :doc:`API reference
    :caption: Project
 
    development
+   contributing
+   security_policy
    releasing
    changelog
    review

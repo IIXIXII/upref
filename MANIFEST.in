@@ -1,5 +1,6 @@
 include pytest.ini make.bat .gitattributes
 include CHANGELOG.md
+include CONTRIBUTING.md SECURITY.md
 recursive-include examples *.py *.md
 recursive-include scripts *.py *.ps1
 recursive-include tests *.py

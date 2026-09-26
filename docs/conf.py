@@ -42,6 +42,7 @@ source_suffix = {
     ".rst": "restructuredtext",
     ".md": "markdown",
 }
+myst_heading_anchors = 3
 root_doc = "index"
 language = "en"
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]

@@ -7,6 +7,8 @@ Upref is a configuration file library, not a credential store. Its security
 features protect file integrity and reduce accidental exposure; they do not
 provide encryption, authentication, or access control management.
 
+To report a suspected vulnerability privately, follow the :doc:`security_policy`.
+
 Plain-text storage
 ------------------
 
