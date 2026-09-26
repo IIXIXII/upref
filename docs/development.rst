@@ -123,6 +123,60 @@ job and release workflow invoke ``scripts/check_installed_package.py`` using
 Python's isolated mode in a clean environment: it checks packaged resources
 and the save/load/update/delete cycle without importing the checkout.
 
+Branch maintenance with Git Bonsai
+----------------------------------
+
+`Git Bonsai <https://github.com/agateau/git-bonsai/tree/0.3.0>`_ is an optional
+developer tool for updating and cleaning local Git branches. The Windows x64
+installer pins the stable 0.3.0 release and checks the downloaded archive
+against a recorded SHA-256 hash:
+
+.. code-block:: console
+
+   .\make.bat bonsai-setup
+   git bonsai --version
+   git bonsai -h
+
+Setup requires Git for Windows, PowerShell, and ``tar`` (included with current
+Windows versions). The first installation also needs access to GitHub. It
+installs the executable and upstream license under the ignored ``.tools``
+directory and registers an alias in this checkout's ``.git/config``. It can be
+run again to reinstall from the cached archive. Python and Rust are not needed
+for this installation.
+
+The local configuration sets ``git-bonsai.default-branch`` to ``master`` and
+adds ``master`` to ``git-bonsai.protected-branches``. Other protected branches
+are preserved. To protect another long-lived branch, use its exact name:
+
+.. code-block:: console
+
+   git config --local --add git-bonsai.protected-branches develop
+
+After committing or stashing your work, launch the interactive command in a
+terminal:
+
+.. code-block:: console
+
+   git bonsai
+
+On Windows, ``.\make.bat bonsai`` launches the same installed executable.
+Version 0.3.0 fetches and prunes remote-tracking references, fast-forwards local
+tracking branches where possible, and prompts for local branches to delete.
+Review the selection before confirming. It refuses a dirty working tree,
+including untracked files, and does not delete remote branches. The ``--yes``
+option skips confirmation; neither setup nor the launcher enables it.
+
+Each clone needs its own setup. If using Linux or macOS, download the matching
+archive from the `official releases
+<https://github.com/agateau/git-bonsai/releases/tag/0.3.0>`_ and put the executable
+on ``PATH``, then configure this checkout:
+
+.. code-block:: console
+
+   git config --local git-bonsai.default-branch master
+   git config --local --add git-bonsai.protected-branches master
+   git bonsai -h
+
 Documentation workflow
 ----------------------
 

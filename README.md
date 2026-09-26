@@ -298,6 +298,18 @@ always keeps its current interpreter; remove and recreate it deliberately to
 change Python. The `.venv` directory is machine-specific and ignored by Git.
 `make.bat clean` removes generated artifacts without deleting it.
 
+For optional Git branch maintenance on Windows x64, install Git Bonsai locally:
+
+```console
+.\make.bat bonsai-setup
+git bonsai
+```
+
+Setup protects `master`. Git Bonsai requires a clean working tree, fetches
+remote changes, updates local tracking branches, and asks which local branches
+to delete. See the [development guide](docs/development.rst) for installation
+details and other platforms.
+
 ## License
 
 Upref is distributed under the

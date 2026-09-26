@@ -10,6 +10,8 @@ cd /d "%ROOT%"
 
 if "%~1"=="" goto action_help
 if /i "%~1"=="setup" goto action_setup
+if /i "%~1"=="bonsai-setup" goto action_bonsai_setup
+if /i "%~1"=="bonsai" goto action_bonsai
 if /i "%~1"=="test" goto action_test
 if /i "%~1"=="check" goto action_check
 if /i "%~1"=="docs" goto action_docs
@@ -42,6 +44,26 @@ exit /b %errorlevel%
 :action_setup_usage
 >&2 echo Usage: make.bat setup [-Python ^<python-executable^>]
 exit /b 2
+
+:action_bonsai_setup
+if not "%~2"=="" (
+    >&2 echo Usage: make.bat bonsai-setup
+    exit /b 2
+)
+"%POWERSHELL%" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%ROOT%scripts\setup_git_bonsai.ps1"
+exit /b %errorlevel%
+
+:action_bonsai
+if not "%~2"=="" (
+    >&2 echo Use "git bonsai -h" to see the available options.
+    exit /b 2
+)
+if not exist "%ROOT%.tools\git-bonsai\git-bonsai.exe" (
+    >&2 echo Run "make.bat bonsai-setup" first.
+    exit /b 1
+)
+"%ROOT%.tools\git-bonsai\git-bonsai.exe"
+exit /b %errorlevel%
 
 :action_test
 if not exist "%VENV_PYTHON%" (
@@ -131,6 +153,8 @@ echo Usage: make.bat ^<action^>
 echo.
 echo Actions:
 echo   setup [-Python ^<path^>]  Create/update .venv and install the dev environment
+echo   bonsai-setup             Install Git Bonsai locally and protect master
+echo   bonsai                   Fetch, update, and interactively clean local branches
 echo   test                     Run the test suite
 echo   check                    Check formatting, lint, and static typing
 echo   docs                     Build the Sphinx documentation
