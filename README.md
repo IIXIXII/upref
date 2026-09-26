@@ -1,5 +1,12 @@
 # Upref
 
+[![PyPI version](https://img.shields.io/pypi/v/upref)](https://pypi.org/project/upref/)
+[![Python versions](https://img.shields.io/pypi/pyversions/upref)](https://pypi.org/project/upref/)
+[![CI](https://github.com/IIXIXII/upref/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/IIXIXII/upref/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/IIXIXII/upref/actions/workflows/codeql.yml/badge.svg?branch=master)](https://github.com/IIXIXII/upref/actions/workflows/codeql.yml)
+[![Documentation status](https://readthedocs.org/projects/upref/badge/?version=stable)](https://upref.readthedocs.io/en/stable/)
+[![License: MIT](https://img.shields.io/pypi/l/upref)](https://github.com/IIXIXII/upref/blob/master/LICENSE.md)
+
 Upref is a small Python library for storing an application's per-user
 configuration in a YAML file. Its v2 API keeps persistence explicit: loading
 configuration never opens a prompt, and collecting interactive values never
@@ -8,6 +15,9 @@ writes them automatically.
 Upref supports Python 3.10 and later. It is typed, uses platform-native user
 configuration directories, validates the complete value tree, and replaces
 files atomically.
+
+Read the [documentation on Read the Docs](https://upref.readthedocs.io/en/stable/)
+for the user guide, practical examples, and complete API reference.
 
 ## Installation
 
@@ -220,7 +230,7 @@ reference in Upref.
 ## Documentation and examples
 
 The complete user guide and API reference are available on
-[Read the Docs](https://upref.readthedocs.io/). The
+[Read the Docs](https://upref.readthedocs.io/en/stable/). The
 [example catalog](docs/examples.rst) lists 26 runnable programs by difficulty,
 input method, and file effects. Start with these:
 
