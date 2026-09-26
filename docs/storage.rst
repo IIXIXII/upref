@@ -92,6 +92,10 @@ kept in insertion order. YAML comments, anchors, aliases, quoting choices,
 and custom formatting are not part of the configuration model and are not
 preserved on save.
 
+Unicode NEL (U+0085) is escaped in quoted strings to prevent YAML line folding
+from changing it into a space. This applies to both keys and values; ordinary
+Unicode text remains readable.
+
 Applying selected changes
 -------------------------
 

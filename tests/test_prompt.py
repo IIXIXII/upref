@@ -277,7 +277,7 @@ def test_owned_bundled_prompters_are_created_and_closed(
     assert prompt_module._make_prompter("gui") == (gui_prompter, True)
 
 
-def test_gui_import_and_initialization_failures_are_wrapped(
+def test_gui_import_failures_are_wrapped(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def fail_import(name: str) -> ModuleType:
@@ -287,6 +287,28 @@ def test_gui_import_and_initialization_failures_are_wrapped(
     with pytest.raises(PromptUnavailableError, match="could not be imported"):
         GuiPrompter()
 
+
+def test_gui_borrows_existing_application_without_destroying_it(monkeypatch):
+    app = object()
+    fake_wx = ModuleType("wx")
+    fake_wx.GetApp = lambda: app
+    fake_wx.App = lambda *args: pytest.fail("borrowed application was recreated")
+    monkeypatch.setattr(gui_module, "import_module", lambda name: fake_wx)
+    with GuiPrompter() as prompter:
+        assert prompter._app is None
+    assert fake_wx.GetApp() is app
+    prompter.close()
+
+
+def test_gui_accepts_application_without_destroy_method(monkeypatch):
+    fake_wx = ModuleType("wx")
+    fake_wx.App = lambda *args: object()
+    monkeypatch.setattr(gui_module, "import_module", lambda name: fake_wx)
+    with GuiPrompter():
+        pass
+
+
+def test_gui_initialization_failures_are_wrapped(monkeypatch):
     fake_wx = ModuleType("wx")
     fake_wx.GetApp = lambda: None
 

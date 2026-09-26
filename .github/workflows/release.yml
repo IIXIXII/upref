@@ -192,6 +192,7 @@ jobs:
                   f"the release version {expected_version!r}"
               )
           PY
+          "$smoke_python" -I "$GITHUB_WORKSPACE/scripts/check_installed_package.py"
           )
 
       - name: Generate SHA-256 checksums

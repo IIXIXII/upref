@@ -108,3 +108,28 @@ heuristic can be ambiguous for raw mappings that resemble descriptors. These
 constraints are described in :doc:`security`, :doc:`storage`, and
 :doc:`migration`; addressing them requires separate API and compatibility
 decisions.
+
+Follow-up hardening
+-------------------
+
+The subsequent implementation adds explicit migration format selection and
+dry-run previews while preserving the default heuristic. Invalid scalar-tagged
+YAML keys now report format errors, null characters in directories are rejected
+at construction, and string subclass keys are normalized to ordinary strings.
+
+Generated round-trip tests found that PyYAML folds Unicode NEL (U+0085) into a
+space when emitted literally. Upref's safe dumper now escapes that character
+in keys and values while retaining readable ordinary Unicode. Temporary-file
+cleanup is registered when the file is created and runs after the stream closes,
+including on write, flush, permission, and replacement failures.
+
+The local Windows/Python 3.14 suite passes 267 tests with 100% statement and
+branch coverage. Three platform-dependent checks and the two opt-in native GUI
+scenarios are skipped by the ordinary command. The two native scenarios were
+also run separately with wxPython 4.3.1 and passed, exercising both owned and
+borrowed applications with real dialogs.
+
+CI now includes native GUI and minimum-runtime-dependency jobs. CI and release
+automation check installed-wheel resources and persistence in isolated mode.
+The 2.x/3.0 wrapper removal schedule is documented in :doc:`migration`;
+criteria for adding locking or resource budgets are in :doc:`security`.

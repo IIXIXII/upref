@@ -60,15 +60,45 @@ Migration behavior
 * recognized descriptor mappings are converted to raw values and metadata
   entries and descriptors without a ``value`` member are omitted;
 * the destination uses the same validation and atomic save as every v2 store;
-* the returned mapping is the mapping written to the destination.
+* the returned mapping is the mapping written to the destination, or the
+  proposed conversion when ``dry_run=True``.
 
 Descriptor detection is necessarily structural because v1 files carry no
 format version. Upref treats a document as descriptors when every
 non-metadata top-level value is a mapping containing at least one of
 ``label``, ``description``, ``type``, or ``value``, and at least one field has
 a ``value`` member. A raw configuration with that same shape is ambiguous and
-may be converted. For such data, load and transform it explicitly before
-calling :meth:`~upref.ConfigStore.save`.
+may be converted. Use ``source_format="raw"`` to preserve every key of such
+data. Use ``source_format="descriptors"`` to force extraction of ``value``
+entries, dropping metadata and descriptors without a value. The default,
+``source_format="auto"``, retains the historical detection behavior.
+
+For example, ``{"timeout": {"value": 30, "unit": "seconds"}}`` becomes
+``{"timeout": 30}`` in auto or descriptor mode. Raw mode preserves the full
+mapping, including ``unit``.
+
+Previewing a conversion
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Inspect the conversion without writing or creating the destination directory:
+
+.. code-block:: python
+
+   preview = store.import_legacy(
+       "my_personnal_data", source_format="raw", dry_run=True
+   )
+   # Inspect or validate preview before choosing to perform the import.
+   migrated = store.import_legacy("my_personnal_data", source_format="raw")
+
+A dry run still checks that the source exists, source and target differ, and
+the target does not already exist unless ``overwrite=True``. It does not test
+write permissions or serialization at the destination. Previewing an existing
+target with ``overwrite=True, dry_run=True`` leaves that target unchanged.
+The returned tree is detached. A later import reads the source again; a preview
+neither reserves the target nor freezes the source against other writers.
+
+Overwriting a target
+~~~~~~~~~~~~~~~~~~~~~
 
 Use ``overwrite=True`` only after deciding that the legacy file is the source
 of truth:
@@ -117,3 +147,16 @@ replacements:
 The compatibility layer preserves v1 locations and descriptor shape; it is
 not the recommended way to create a new v2 file. See :doc:`legacy_api` for its
 complete reference.
+
+Removal schedule
+~~~~~~~~~~~~~~~~
+
+The compatibility wrappers remain supported throughout all 2.x releases.
+Their removal is scheduled for 3.0, and their warnings name that boundary.
+There is no calendar release date for 3.0. Migrate callers and run application
+tests with deprecation warnings enabled before adopting that major version.
+
+This schedule covers the deprecated functions listed above, both at package
+level and in ``upref.legacy``. Explicit file migration through
+``ConfigStore.import_legacy`` is retained; removing the wrappers will not
+require users to abandon old files before they can upgrade.

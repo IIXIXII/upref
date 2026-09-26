@@ -11,6 +11,48 @@ On Windows without activation, replace `python` with
 `.\.venv\Scripts\python.exe`. GUI examples additionally require
 `python -m pip install -e ".[gui]"` and a desktop session.
 
+The catalog contains **26 runnable examples**. The ten user-preference scenarios
+below use automatically cleaned temporary directories, including the examples
+that demonstrate saving. To adapt them to a persistent application, omit the
+store's `directory` override and remove the demo's seed data.
+
+## User preference scenarios
+
+| Script | Input | Situation and expected behavior |
+| --- | --- | --- |
+| [first_run_preferences.py](first_run_preferences.py) | Terminal | Choose theme, language, font size, and notifications; the simulated second launch asks nothing |
+| [apply_preferences.py](apply_preferences.py) | Terminal | Edit a draft, then Apply or discard; Enter at confirmation keeps the existing file |
+| [reset_preferences.py](reset_preferences.py) | None | Reset one override, an entire section, then all preferences |
+| [recent_files.py](recent_files.py) | None | Reopening a document moves it to the front of a bounded history |
+| [window_preferences.py](window_preferences.py) | None | Restore window bounds inside a smaller display; no GUI dependency |
+| [account_preferences.py](account_preferences.py) | None | Isolate work/personal preferences and retain them after signing out |
+| [session_overrides.py](session_overrides.py) | CLI options | Defaults < saved preferences < session overrides; only `--remember` saves overrides |
+| [import_export_preferences.py](import_export_preferences.py) | None | Export portable JSON, validate and preview imports, preserve local history |
+| [backup_restore.py](backup_restore.py) | None | Snapshot values and restore them; missing or invalid backups cannot clear settings |
+| [migration_preview.py](migration_preview.py) | None | Compare automatic and explicit raw v1 conversion before importing |
+
+Try these commands from the repository root:
+
+```console
+python examples/first_run_preferences.py
+python examples/apply_preferences.py
+python examples/session_overrides.py --theme dark --font-size 20
+python examples/session_overrides.py --theme dark --remember
+python examples/reset_preferences.py
+python examples/import_export_preferences.py
+```
+
+For first-run setup, press Enter four times to accept suggested values. In the
+Apply example, change the two fields and answer `yes` to save; `no` or Enter
+discards the draft. Ctrl+C cancels either interaction. Each invocation starts
+with fresh demo data; `--remember` persists only inside that invocation's
+temporary directory.
+
+See the [user preference walkthroughs](../docs/user_preferences.rst) for each
+scenario's output, assumptions, and complete source.
+
+## Storage and collection fundamentals
+
 | Level | Script | Input | Files and purpose |
 | --- | --- | --- | --- |
 | Simple | [portable_store.py](portable_store.py) | None | Temporary directory; defaults, save/load, update |

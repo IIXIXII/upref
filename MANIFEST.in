@@ -2,5 +2,6 @@ include pytest.ini make.bat .gitattributes
 include CHANGELOG.md
 recursive-include examples *.py *.md
 recursive-include scripts *.py *.ps1
+recursive-include tests *.py
 recursive-include docs *.rst *.md *.py *.css *.png
 prune docs/_build

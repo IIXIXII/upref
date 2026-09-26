@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from collections import OrderedDict
+from enum import Enum
 
 import pytest
 
+from upref import ConfigStore
 from upref._types import normalize_config
 from upref.errors import ConfigFormatError
 
@@ -50,6 +52,50 @@ def test_normalize_config_detaches_every_mutable_value() -> None:
 
     assert result["second"] == ["initial"]
     assert source["first"]["items"] == ["initial", "source-only"]
+
+
+def test_string_subclass_keys_use_underlying_text_and_round_trip(tmp_path):
+    class Key(str, Enum):
+        THEME = "theme"
+
+    class DisplayKey(str):
+        def __str__(self):
+            return "display-only"
+
+    source = {Key.THEME: {DisplayKey("name"): "dark"}}
+    result = normalize_config(source)
+    assert result == {"theme": {"name": "dark"}}
+    assert type(next(iter(result))) is str
+    assert type(next(iter(result["theme"]))) is str
+    assert type(next(iter(source))) is Key
+
+    store = ConfigStore("keys", directory=tmp_path)
+    store.save(source)
+    assert store.load() == result
+
+
+def test_scalar_subclasses_remain_invalid_as_values():
+    class Value(str, Enum):
+        DARK = "dark"
+
+    with pytest.raises(ConfigFormatError, match="Invalid configuration value"):
+        normalize_config({"theme": Value.DARK})
+
+
+def test_normalizing_string_keys_cannot_silently_discard_values():
+    class DistinctKey(str):
+        __hash__ = object.__hash__
+
+        def __eq__(self, other):
+            return self is other
+
+    data = {"theme": "dark", DistinctKey("theme"): "light"}
+    assert len(data) == 2
+    with pytest.raises(
+        ConfigFormatError, match="Duplicate mapping key after string normalization"
+    ):
+        normalize_config(data)
+    assert len(data) == 2
 
 
 @pytest.mark.parametrize("root", [None, [], "text", 1, ("value",)])

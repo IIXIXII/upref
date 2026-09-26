@@ -82,19 +82,46 @@ Equivalent tools can be run directly through the environment interpreter:
    .\.venv\Scripts\python.exe -m mypy upref examples
    .\.venv\Scripts\python.exe -m sphinx -E -a -W --keep-going -b html docs docs\_build\html
 
-Continuous integration also measures statement coverage and requires 100
-percent. Reproduce that gate locally with:
+Continuous integration measures statement and branch coverage and requires
+100 percent. Reproduce that gate locally with:
 
 .. code-block:: console
 
    .\.venv\Scripts\python.exe -m pytest --cov=upref --cov-report=term-missing
 
-Behavioral checks matter in addition to statement coverage. ``test_examples.py``
+Behavioral checks matter in addition to coverage. ``test_properties.py`` uses
+Hypothesis to generate nested configurations and verify YAML round trips,
+independence of mutable containers, merge identities, and preservation of the
+original file after a failed replacement. NaN is excluded from equality-based
+properties because it does not compare equal to itself.
+
+``test_examples.py``
 runs storage and advanced recipes in isolated directories, supplies deterministic
 terminal answers, and verifies cancellation without saving. Tests for GUI
 arguments and lifecycle use a wxPython substitute and do not require a display.
-After changing GUI presentation, also run ``examples/gui_collection.py`` in a
-desktop session with the GUI extra installed to check actual rendering.
+Native GUI integration tests run in a dedicated Windows CI job. Each scenario
+uses a separate process with a 40-second timeout and drives real modal dialogs
+through wx's event loop. They check app ownership, repeated dialogs, formatted
+prefill, cancellation, password controls, and cleanup after an injected error.
+They are skipped in the ordinary suite. Run them in a desktop session with:
+
+.. code-block:: powershell
+
+   .\.venv\Scripts\python.exe -m pip install -e '.[test,gui]'
+   $env:UPREF_RUN_GUI_TESTS = '1'
+   .\.venv\Scripts\python.exe -m pytest tests/integration -q --no-cov
+   Remove-Item Env:UPREF_RUN_GUI_TESTS
+
+The dedicated run disables coverage because the complete coverage gate belongs
+to the ordinary unit suite. Missing wxPython is an error when native tests are
+explicitly enabled. Visual layout can additionally be inspected with
+``examples/gui_collection.py``.
+
+CI also runs the ordinary suite on Python 3.10 with ``platformdirs==4.0.0`` and
+``PyYAML==6.0`` to check the advertised minimum runtime dependencies. The wheel
+job and release workflow invoke ``scripts/check_installed_package.py`` using
+Python's isolated mode in a clean environment: it checks packaged resources
+and the save/load/update/delete cycle without importing the checkout.
 
 Documentation workflow
 ----------------------

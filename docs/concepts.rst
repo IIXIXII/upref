@@ -45,9 +45,13 @@ of the following:
 Empty strings, empty containers, ``False``, and ``0`` are valid values. An
 empty document or explicit YAML ``null`` at the root represents an empty
 mapping. A list or non-null scalar at the document root is invalid. Mapping
-keys at every level must be strings.
+keys at every level must be strings. Keys derived from ``str``, including
+string-backed enum members, are normalized to ordinary strings using their
+underlying text. A customized ``__str__`` display does not rename the key.
+If distinct custom keys normalize to the same text, validation rejects the
+collision instead of discarding a value.
 
-Objects such as ``pathlib.Path``, ``datetime``, tuples, sets, enum
+Values such as ``pathlib.Path``, ``datetime``, tuples, sets, enum
 members, and application classes are not converted implicitly. Convert them
 to a supported representation before calling
 :meth:`~upref.ConfigStore.save`.

@@ -195,10 +195,18 @@ store = ConfigStore("my-application")
 config = store.import_legacy("my_personnal_data")
 ```
 
+For ambiguous files, choose ``source_format="raw"`` to retain the entire
+mapping, or ``source_format="descriptors"`` to extract v1 values explicitly.
+Add ``dry_run=True`` to inspect the conversion without writing. Previewing
+still performs source and target preflight checks. The default ``"auto"``
+format retains the historical heuristic.
+
 The source file is left untouched, and using it as the v2 target is rejected.
 Migration checks for an existing v2 file unless `overwrite=True` is passed;
 because this preflight check is not locked, applications with concurrent
 writers must coordinate the migration externally.
+Deprecated v1 wrappers remain available throughout 2.x and are scheduled for
+removal in 3.0; explicit file migration remains supported.
 
 ## Security
 
@@ -213,13 +221,18 @@ reference in Upref.
 
 The complete user guide and API reference are available on
 [Read the Docs](https://upref.readthedocs.io/). The
-[example catalog](docs/examples.rst) lists 16 runnable programs by difficulty,
+[example catalog](docs/examples.rst) lists 26 runnable programs by difficulty,
 input method, and file effects. Start with these:
 
 | Level | Example | What it demonstrates |
 | --- | --- | --- |
 | Simple | `portable_store.py` | Defaults, save/load, and updates in a temporary directory |
 | Simple | `boolean_collection.py` | Boolean parsing, optional input, and cancellation |
+| Simple | `first_run_preferences.py` | Initial user setup and reuse on the next startup |
+| Intermediate | `apply_preferences.py` | Edit a draft, then confirm or discard changes |
+| Intermediate | `reset_preferences.py` | Restore one preference, a section, or all defaults |
+| Intermediate | `session_overrides.py` | CLI overrides with explicit `--remember` persistence |
+| Advanced | `import_export_preferences.py` | Validated preference transfer with local history retained |
 | Intermediate | `edit_settings.py` | Enter to keep values and editable JSON lists |
 | Intermediate | `gui_collection.py` | GUI ownership, formatted prefill, and cancellation |
 | Intermediate | `handle_errors.py` | Reporting malformed YAML while retaining the file |
@@ -237,6 +250,10 @@ from an installed checkout (`python -m pip install -e .`):
 python examples/portable_store.py
 python examples/custom_interface.py
 ```
+
+The [user preference walkthroughs](docs/user_preferences.rst) also cover recent
+documents, window geometry, multiple accounts, backup/restore, and previewing
+legacy migration. Every scenario in that guide uses temporary files.
 
 See also the [troubleshooting guide](docs/troubleshooting.rst) and the
 [code review and compatibility notes](docs/review.rst).

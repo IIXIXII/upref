@@ -3,17 +3,51 @@
 Examples
 ========
 
-The 16 programs in ``examples`` are complete and runnable from a checkout with
-the project installed in ``.venv``. The nine recipes listed first use memory
-or automatically cleaned temporary directories. The seven persistent examples
-below use distinct per-user configuration locations; migration reads an
-existing historical file and creates a separate v2 file.
+The 26 programs in ``examples`` are complete and runnable from a checkout with
+the project installed in ``.venv``. Ten user-preference scenarios and nine
+fundamental recipes use memory or automatically cleaned temporary directories.
+The seven persistent examples below use distinct per-user configuration
+locations; migration reads an existing historical file and creates a separate
+v2 file.
 
 Run an example on Windows with:
 
 .. code-block:: console
 
    .\.venv\Scripts\python.exe examples\basic_store.py
+
+User preference scenarios
+--------------------------
+
+Start with :doc:`user_preferences` for everyday application behavior. All ten
+scenarios use temporary files, and only the first two require terminal input.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 65
+
+   * - Script
+     - User scenario
+   * - ``first_run_preferences.py``
+     - Initial setup and reuse on the next startup.
+   * - ``apply_preferences.py``
+     - Edit a draft, then confirm, discard, or cancel.
+   * - ``reset_preferences.py``
+     - Remove one override, a section, or the whole configuration.
+   * - ``recent_files.py``
+     - Keep a bounded history of recently opened documents.
+   * - ``window_preferences.py``
+     - Restore visible window geometry after changing displays.
+   * - ``account_preferences.py``
+     - Keep separate preferences for accounts within one OS user.
+   * - ``session_overrides.py``
+     - Override preferences through CLI options with opt-in persistence.
+   * - ``import_export_preferences.py``
+     - Transfer validated portable preferences without local history.
+   * - ``backup_restore.py``
+     - Restore a previous preference snapshot.
+   * - ``migration_preview.py``
+     - Preview legacy conversion and preserve ambiguous raw data.
 
 Progressive recipes
 -------------------

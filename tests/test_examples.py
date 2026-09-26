@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import runpy
+import sys
 import tempfile
 from pathlib import Path
 
@@ -13,6 +14,7 @@ EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 
 @pytest.fixture
 def isolated_examples(tmp_path, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["upref-example"])
     monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
     monkeypatch.setattr(
         "upref._paths.user_config_path",
@@ -34,6 +36,20 @@ def isolated_examples(tmp_path, monkeypatch):
         ("basic_store.py", ""),
         ("defaults_and_update.py", ""),
         ("multiple_projects.py", ""),
+        ("reset_preferences.py", "Appearance reset; notifications retained:"),
+        ("recent_files.py", "Recent documents: ['notes.txt', 'draft.md']"),
+        ("window_preferences.py", "'width': 1280, 'height': 720"),
+        ("account_preferences.py", "Signed out; account preferences retained."),
+        (
+            "session_overrides.py",
+            "Saved overrides: {'theme': 'light', 'font_size': 16}",
+        ),
+        ("import_export_preferences.py", "Local history retained: ['target-only.txt']"),
+        (
+            "backup_restore.py",
+            "Restored preferences: {'theme': 'dark', 'font_size': 16, 'notifications': False}",
+        ),
+        ("migration_preview.py", "Migration applied; legacy file unchanged."),
         (
             "environment_profiles.py",
             "Environment-variable overrides were not persisted.",
@@ -51,6 +67,13 @@ def test_noninteractive_examples_run(isolated_examples, script, expected, capsys
         ("boolean_collection.py", ["maybe", "no", ""], "'notifications': False"),
         ("edit_settings.py", ["", "[]"], "'tags': []"),
         ("nested_collection.py", ["", "70000", "9000"], "'port': 9000"),
+        (
+            "first_run_preferences.py",
+            ["purple", "dark", "fr", "9", "18", "no"],
+            "Second startup: preferences reused without prompting.",
+        ),
+        ("apply_preferences.py", ["dark", "20", "yes"], "Changes applied."),
+        ("apply_preferences.py", ["", "", ""], "Draft discarded."),
     ],
 )
 def test_interactive_examples_retry_and_accept_values(
@@ -63,7 +86,13 @@ def test_interactive_examples_retry_and_accept_values(
 
 
 @pytest.mark.parametrize(
-    "script", ["boolean_collection.py", "edit_settings.py", "nested_collection.py"]
+    "script",
+    [
+        "boolean_collection.py",
+        "edit_settings.py",
+        "nested_collection.py",
+        "first_run_preferences.py",
+    ],
 )
 def test_interactive_examples_cancel_without_saving(
     isolated_examples, monkeypatch, capsys, script

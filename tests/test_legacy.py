@@ -54,6 +54,101 @@ def test_imports_raw_v1_data_without_changing_its_shape(tmp_path):
     assert store.load() == raw
 
 
+@pytest.mark.parametrize(
+    ("source_format", "expected"),
+    [
+        ("auto", {"timeout": 30}),
+        ("descriptors", {"timeout": 30}),
+        ("raw", {"timeout": {"value": 30, "unit": "seconds"}}),
+    ],
+)
+def test_explicit_migration_format_resolves_ambiguous_data(
+    tmp_path, source_format, expected
+):
+    source = tmp_path / "ambiguous.conf"
+    save_yaml(source, {"timeout": {"value": 30, "unit": "seconds"}})
+    original = source.read_bytes()
+    store = ConfigStore("sample", directory=tmp_path / "v2")
+
+    assert (
+        store.import_legacy(
+            "ambiguous", legacy_directory=tmp_path, source_format=source_format
+        )
+        == expected
+    )
+    assert store.load() == expected
+    assert source.read_bytes() == original
+
+
+def test_explicit_descriptors_can_convert_documents_without_values(tmp_path):
+    save_yaml(tmp_path / "empty.conf", {"field": {"label": "Field"}, "__gui__": {}})
+    store = ConfigStore("sample", directory=tmp_path / "v2")
+    assert (
+        store.import_legacy(
+            "empty", legacy_directory=tmp_path, source_format="descriptors"
+        )
+        == {}
+    )
+    assert store.load() == {}
+
+
+def test_dry_run_does_not_create_directory_and_matches_committed_conversion(tmp_path):
+    source = tmp_path / "preview.conf"
+    save_yaml(source, {"tags": {"value": ["one"]}})
+    original = source.read_bytes()
+    store = ConfigStore("sample", directory=tmp_path / "absent")
+
+    preview = store.import_legacy(
+        "preview", legacy_directory=tmp_path, source_format="descriptors", dry_run=True
+    )
+    assert preview == {"tags": ["one"]}
+    assert not store.path.parent.exists()
+    committed = store.import_legacy(
+        "preview", legacy_directory=tmp_path, source_format="descriptors"
+    )
+    assert committed == preview
+    preview["tags"].append("preview-only")
+    assert store.load() == committed
+    assert source.read_bytes() == original
+
+
+def test_dry_run_keeps_target_checks_without_overwriting(tmp_path):
+    save_yaml(tmp_path / "old.conf", {"imported": True})
+    store = ConfigStore("sample", directory=tmp_path / "v2")
+    store.save({"keep": True})
+    original = store.path.read_bytes()
+    with pytest.raises(MigrationError, match="already exists"):
+        store.import_legacy("old", legacy_directory=tmp_path, dry_run=True)
+    assert store.import_legacy(
+        "old", legacy_directory=tmp_path, dry_run=True, overwrite=True
+    ) == {"imported": True}
+    assert store.path.read_bytes() == original
+
+    same = ConfigStore("sample", directory=tmp_path, filename="old.conf")
+    with pytest.raises(MigrationError, match="different files"):
+        same.import_legacy(
+            "old", legacy_directory=tmp_path, dry_run=True, overwrite=True
+        )
+    with pytest.raises(MigrationError, match="does not exist"):
+        store.import_legacy("missing", legacy_directory=tmp_path, dry_run=True)
+
+
+@pytest.mark.parametrize("source_format", ["RAW", "unknown", None, 1])
+def test_invalid_migration_format_fails_before_reading(tmp_path, source_format):
+    store = ConfigStore("sample", directory=tmp_path / "v2")
+    with pytest.raises(ValueError, match="source_format"):
+        store.import_legacy(
+            "absent", source_format=source_format, legacy_directory=tmp_path
+        )
+
+
+@pytest.mark.parametrize("dry_run", ["false", None, 1])
+def test_invalid_dry_run_fails_before_reading(tmp_path, dry_run):
+    store = ConfigStore("sample", directory=tmp_path / "v2")
+    with pytest.raises(TypeError, match="dry_run"):
+        store.import_legacy("absent", dry_run=dry_run, legacy_directory=tmp_path)
+
+
 def test_import_refuses_to_overwrite_existing_v2_file(tmp_path):
     legacy_dir = tmp_path / "v1"
     save_yaml(legacy_dir / "old.conf", {"value": 1})
@@ -260,6 +355,13 @@ def test_set_pref_supports_nested_raw_values(tmp_path, monkeypatch):
         "database": {"host": "localhost"},
         "enabled": False,
     }
+
+    with pytest.warns(DeprecationWarning):
+        legacy.set_pref({"enabled": True}, "set-pref")
+    assert (
+        legacy.conv_description_to_raw(legacy.load_yaml(preference_path))["enabled"]
+        is True
+    )
 
 
 def test_description_detection_handles_metadata_only_documents() -> None:

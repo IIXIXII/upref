@@ -88,3 +88,19 @@ Applications using Upref should also:
 * treat configuration imported from another machine as untrusted input;
 * keep backups and crash reports from collecting secrets accidentally;
 * add cross-process locking when lost updates are unacceptable.
+
+Criteria for expanding the storage contract
+-------------------------------------------
+
+Upref's current scope remains small, local configuration files. If an
+application allows several processes to write the same file and cannot accept
+lost updates, coordinate the complete read/merge/write operation with an
+external lock. A future built-in transaction API would need portable locking,
+timeouts, failure recovery, and multiprocess tests before becoming a guarantee.
+
+If configurations will be accepted from external parties, input byte limits
+alone are insufficient: aliases can expand during normalization. A bounded
+loader would need explicit limits for depth and expanded nodes as well as
+input size. Such limits should be opt-in initially to avoid silently changing
+the accepted configuration model. They are not implemented by this release;
+use the isolation and validation measures described above for those inputs.

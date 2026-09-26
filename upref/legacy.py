@@ -23,7 +23,7 @@ from collections.abc import Mapping
 from copy import deepcopy
 from os import PathLike
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 from ._merge import deep_merge
 from ._paths import legacy_config_path
@@ -56,7 +56,8 @@ def _warn_v1(name: str) -> None:
         None.
     """
     warnings.warn(
-        f"upref.{name}() is a v1 compatibility API; use ConfigStore instead",
+        f"upref.{name}() is a v1 compatibility API scheduled for removal in 3.0; "
+        "use ConfigStore for storage and collect for interactive input",
         DeprecationWarning,
         stacklevel=3,
     )
@@ -544,13 +545,15 @@ def import_legacy(
     *,
     overwrite: bool = False,
     legacy_directory: str | PathLike[str] | None = None,
+    source_format: Literal["auto", "raw", "descriptors"] = "auto",
+    dry_run: bool = False,
 ) -> Config:
     """Import one v1 file into ``store`` while leaving the source untouched.
 
-    Documents recognized by the structural descriptor heuristic are converted
-    to raw values; other mappings retain their shape. A raw document whose
-    fields resemble descriptors is therefore ambiguous. The target is written
-    only after the source has been parsed and normalized successfully.
+    The default structural heuristic can be overridden with ``source_format``
+    to preserve raw mappings or explicitly extract descriptor values. A dry
+    run performs the same read and preflight checks, then returns the detached
+    conversion without creating a directory or writing the target.
 
     The source and target identity check prevents self-overwrite. The separate
     target-existence check and save are not locked, so concurrent migrations
@@ -561,9 +564,14 @@ def import_legacy(
         name: Legacy preference filename stem.
         overwrite: Permit replacing an existing v2 destination.
         legacy_directory: Absolute override for the legacy source directory.
+        source_format: ``"auto"`` detects descriptors heuristically, ``"raw"``
+            preserves the complete mapping, and ``"descriptors"`` extracts
+            value entries, omitting metadata and fields without a value.
+        dry_run: Return a preview without saving. Target identity and existence
+            checks still apply, but write permissions are not tested.
 
     Returns:
-        A detached copy of the values written to ``store``.
+        The detached converted values, saved unless ``dry_run`` is true.
 
     Raises:
         ConfigPathError: If the source name or directory is unsafe.
@@ -573,7 +581,14 @@ def import_legacy(
         MigrationError: If source and target are the same file, the source is
             missing, the target already exists without ``overwrite``, or the
             destination store reports an Upref persistence error.
+        ValueError: If ``source_format`` is not a supported selector.
+        TypeError: If ``dry_run`` is not a boolean.
     """
+    if source_format not in ("auto", "raw", "descriptors"):
+        raise ValueError("source_format must be 'auto', 'raw', or 'descriptors'")
+    if not isinstance(dry_run, bool):
+        raise TypeError("dry_run must be a boolean")
+
     source = legacy_config_path(name, directory=legacy_directory)
     if source == store.path:
         raise MigrationError(
@@ -592,9 +607,12 @@ def import_legacy(
 
     migrated = (
         conv_description_to_raw(legacy_data)
-        if _looks_like_description(legacy_data)
+        if source_format == "descriptors"
+        or (source_format == "auto" and _looks_like_description(legacy_data))
         else normalize_config(legacy_data)
     )
+    if dry_run:
+        return migrated
     try:
         store.save(migrated)
     except UprefError as error:

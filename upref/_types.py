@@ -66,13 +66,14 @@ def _normalize_value(
 
     Raises:
         ConfigFormatError: If a mapping key is not a string, a value has an
-            unsupported type, or a list or mapping contains a recursive cycle.
+            unsupported type, normalized keys collide, or a list or mapping
+            contains a recursive cycle.
 
     Notes:
         Repeated references are valid when they do not form a cycle. Each
-        occurrence is copied independently. Scalar subclasses are deliberately
-        rejected so the result contains only the exact scalar types declared by
-        :data:`ConfigScalar`.
+        occurrence is copied independently. Scalar value subclasses are
+        deliberately rejected. Mapping keys derived from str are converted to
+        plain strings using their underlying text, not an overridden __str__.
     """
     if value is None or type(value) in _SCALAR_TYPES:
         return cast(ConfigScalar, value)
@@ -95,6 +96,12 @@ def _normalize_value(
                     raise ConfigFormatError(
                         f"Invalid mapping key at {current_path}: expected str, "
                         f"got {type(key).__name__} ({key!r})"
+                    )
+                key = str.__str__(key)
+                if key in result:
+                    raise ConfigFormatError(
+                        f"Duplicate mapping key after string normalization at "
+                        f"{current_path}: {key!r}"
                     )
                 result[key] = _normalize_value(item, path + (key,), active)
             return result
@@ -146,8 +153,9 @@ def normalize_config(data: object) -> Config:
 
     Raises:
         ConfigFormatError: If the root is not a mapping, a key is not a string,
-            a value has an unsupported type, or the object graph contains a
-            container cycle or exceeds Python's recursion limit.
+            normalized keys collide, a value has an unsupported type, or the
+            object graph contains a container cycle or exceeds Python's
+            recursion limit.
     """
     if not isinstance(data, Mapping):
         raise ConfigFormatError(

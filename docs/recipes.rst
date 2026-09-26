@@ -6,6 +6,10 @@ them from an installed checkout with ``python examples/<name>.py``. All files
 created by the recipes below use automatically cleaned temporary directories;
 the interactive collection examples otherwise work entirely in memory.
 
+For first-run setup, Apply/Cancel, resets, recent documents, window geometry,
+account preferences, session overrides, and preference transfer, see the ten
+additional walkthroughs in :doc:`user_preferences`.
+
 A first store without persistent files
 --------------------------------------
 

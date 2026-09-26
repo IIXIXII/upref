@@ -136,6 +136,26 @@ def test_rejects_relative_explicit_directory() -> None:
         _paths.resolve_config_path("sample-app", directory=Path("relative"))
 
 
+@pytest.mark.parametrize("as_path", [False, True])
+def test_rejects_null_characters_in_directories(tmp_path, as_path):
+    directory = str(tmp_path / "invalid") + "\x00"
+    if as_path:
+        directory = Path(directory)
+    with pytest.raises(ConfigPathError, match="null character"):
+        _paths.resolve_config_path("sample", directory=directory)
+    with pytest.raises(ConfigPathError, match="null character"):
+        _paths.legacy_config_path("sample", directory=directory)
+
+
+def test_wraps_value_errors_during_directory_resolution(tmp_path, monkeypatch):
+    def fail_resolve(self, strict=False):
+        raise ValueError("invalid filesystem path")
+
+    monkeypatch.setattr(Path, "resolve", fail_resolve)
+    with pytest.raises(ConfigPathError, match="Unable to resolve directory"):
+        _paths.resolve_config_path("sample", directory=tmp_path)
+
+
 def test_rejects_non_string_components(tmp_path: Path) -> None:
     with pytest.raises(ConfigPathError, match="must be a string"):
         _paths.resolve_config_path(42, directory=tmp_path)  # type: ignore[arg-type]

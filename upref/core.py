@@ -16,6 +16,7 @@ from collections.abc import Mapping
 from os import PathLike
 from pathlib import Path
 from stat import S_ISREG
+from typing import Literal
 
 from ._merge import deep_merge
 from ._paths import resolve_config_path
@@ -236,14 +237,16 @@ class ConfigStore:
         *,
         overwrite: bool = False,
         legacy_directory: str | PathLike[str] | None = None,
+        source_format: Literal["auto", "raw", "descriptors"] = "auto",
+        dry_run: bool = False,
     ) -> Config:
         """Import one historical v1 ``.conf`` file into this store.
 
-        Mappings recognized by v1's structural descriptor heuristic are
-        converted by extracting ``value`` entries; other mappings retain their
-        shape. A raw mapping that resembles descriptors can be ambiguous. The
-        source file is never modified or deleted, and using it as the target is
-        rejected.
+        By default, v1's structural heuristic detects descriptor mappings and
+        extracts their ``value`` entries. Select ``source_format="raw"`` to
+        preserve an ambiguous mapping, or ``"descriptors"`` to force extraction.
+        The source is never modified or deleted, and using it as the target is
+        rejected. A dry run returns the conversion without writing anything.
 
         Migrated values, including historical password fields, are persisted
         as readable plain-text YAML.
@@ -256,9 +259,16 @@ class ConfigStore:
             overwrite: Permit replacement when the v2 target already exists.
             legacy_directory: Absolute override for the legacy source
                 directory, primarily for tests and controlled migrations.
+            source_format: ``"auto"`` uses the historical heuristic; ``"raw"``
+                retains every key; ``"descriptors"`` extracts values and drops
+                metadata and descriptors without a value.
+            dry_run: Preview only. Source and target preflight checks still
+                apply, including ``overwrite``. No destination directory is
+                created and write permissions are not tested.
 
         Returns:
-            A detached dictionary containing the imported raw values.
+            A detached dictionary containing the converted values, persisted
+            unless ``dry_run`` is true.
 
         Raises:
             ConfigPathError: If the legacy name or directory is unsafe.
@@ -269,6 +279,8 @@ class ConfigStore:
                 or persistence fails.
             ConfigFormatError: If the legacy YAML cannot be parsed or contains
                 unsupported configuration data.
+            ValueError: If ``source_format`` is not a supported selector.
+            TypeError: If ``dry_run`` is not a boolean.
         """
         # The lazy import keeps compatibility code out of the normal v2 path
         # and avoids a core/legacy import cycle.
@@ -279,6 +291,8 @@ class ConfigStore:
             name,
             overwrite=overwrite,
             legacy_directory=legacy_directory,
+            source_format=source_format,
+            dry_run=dry_run,
         )
 
     def __repr__(self) -> str:

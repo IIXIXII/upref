@@ -110,6 +110,48 @@ jobs:
       - name: Run smoke tests
         run: python -m pytest -q
 
+  tests-minimum-dependencies:
+    name: Minimum runtime dependencies (Python 3.10)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.10
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.10"
+          cache: pip
+      - name: Install minimum supported runtime dependencies
+        run: python -m pip install -e ".[test]" "platformdirs==4.0.0" "PyYAML==6.0"
+      - name: Check installed dependencies
+        run: python -m pip check
+      - name: Run tests
+        run: python -m pytest -q
+
+  tests-gui:
+    name: Native wxPython dialogs (Windows, Python 3.12)
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install package with GUI and test dependencies
+        run: python -m pip install -e ".[test,gui]"
+      - name: Exercise native dialogs in bounded subprocesses
+        env:
+          UPREF_RUN_GUI_TESTS: "1"
+        run: python -m pytest tests/integration -q --no-cov
+
   documentation:
     name: Documentation
     runs-on: ubuntu-latest
@@ -178,8 +220,12 @@ jobs:
 
           with tarfile.open(next(Path("dist").glob("*.tar.gz"))) as archive:
               names = {name.partition("/")[2] for name in archive.getnames()}
-          required = {"pytest.ini", "scripts/add_license_headers.py", "docs/index.rst"}
+          required = {
+              "pytest.ini", "scripts/add_license_headers.py",
+              "scripts/check_installed_package.py", "docs/index.rst",
+          }
           required.update(path.as_posix() for path in Path("examples").glob("*.*"))
+          required.update(path.as_posix() for path in Path("tests").rglob("*.py"))
           missing = required - names
           if missing:
               raise SystemExit(f"Missing source distribution files: {sorted(missing)}")
@@ -193,7 +239,7 @@ jobs:
           "$RUNNER_TEMP/upref-wheel-smoke/bin/python" -m pip install dist/*.whl
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/upref-wheel-smoke/bin/python" -m pip check
-          "$RUNNER_TEMP/upref-wheel-smoke/bin/python" -c "import upref; print(upref.__version__)"
+          "$RUNNER_TEMP/upref-wheel-smoke/bin/python" -I "$GITHUB_WORKSPACE/scripts/check_installed_package.py"
       - name: Upload distributions
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -209,6 +255,8 @@ jobs:
       - quality
       - tests-linux
       - tests-platforms
+      - tests-minimum-dependencies
+      - tests-gui
       - documentation
       - package
     runs-on: ubuntu-latest
@@ -221,6 +269,8 @@ jobs:
           QUALITY_RESULT: ${{ needs.quality.result }}
           LINUX_RESULT: ${{ needs.tests-linux.result }}
           PLATFORMS_RESULT: ${{ needs.tests-platforms.result }}
+          MINIMUM_RESULT: ${{ needs.tests-minimum-dependencies.result }}
+          GUI_RESULT: ${{ needs.tests-gui.result }}
           DOCUMENTATION_RESULT: ${{ needs.documentation.result }}
           PACKAGE_RESULT: ${{ needs.package.result }}
         run: |
@@ -228,6 +278,8 @@ jobs:
             "$QUALITY_RESULT" \
             "$LINUX_RESULT" \
             "$PLATFORMS_RESULT" \
+            "$MINIMUM_RESULT" \
+            "$GUI_RESULT" \
             "$DOCUMENTATION_RESULT" \
             "$PACKAGE_RESULT"
           do

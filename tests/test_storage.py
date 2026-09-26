@@ -91,6 +91,57 @@ def test_rejects_non_string_mapping_keys(tmp_path: Path) -> None:
         _storage.load_yaml(path)
 
 
+@pytest.mark.parametrize(
+    "key", ["!!str [a, b]", "!!str {a: b}", "!!merge [a, b]", "!!merge {a: b}"]
+)
+def test_non_scalar_keys_with_scalar_tags_report_format_errors(tmp_path, key):
+    path = tmp_path / "invalid-key.yaml"
+    content = f"? {key}\n: value\n"
+    path.write_text(content, encoding="utf-8")
+
+    with pytest.raises(
+        ConfigFormatError, match="expected a string mapping key"
+    ) as caught:
+        _storage.load_yaml(path)
+
+    assert str(path) in str(caught.value)
+    assert "line 1, column 3" in str(caught.value)
+    assert path.read_text(encoding="utf-8") == content
+
+
+def test_failed_temporary_file_creation_preserves_existing_file(tmp_path, monkeypatch):
+    path = tmp_path / "config.yaml"
+    _storage.save_yaml(path, {"original": True})
+    previous = path.read_bytes()
+
+    def fail_create(*args, **kwargs):
+        raise PermissionError("temporary file denied")
+
+    monkeypatch.setattr(_storage.tempfile, "NamedTemporaryFile", fail_create)
+    with pytest.raises(ConfigWriteError, match="temporary file denied"):
+        _storage.save_yaml(path, {"replacement": True})
+
+    assert path.read_bytes() == previous
+    assert list(tmp_path.iterdir()) == [path]
+
+
+def test_failed_fsync_preserves_existing_file_and_removes_closed_temp(
+    tmp_path, monkeypatch
+):
+    path = tmp_path / "config.yaml"
+    _storage.save_yaml(path, {"original": True})
+    previous = path.read_bytes()
+
+    def fail_fsync(descriptor):
+        raise OSError("flush denied")
+
+    monkeypatch.setattr(_storage.os, "fsync", fail_fsync)
+    with pytest.raises(ConfigWriteError, match="flush denied"):
+        _storage.save_yaml(path, {"replacement": True})
+    assert path.read_bytes() == previous
+    assert list(tmp_path.iterdir()) == [path]
+
+
 def test_round_trip_unicode_and_supported_types(tmp_path: Path) -> None:
     path = tmp_path / "config.yaml"
     expected = {
@@ -117,6 +168,18 @@ def test_save_creates_parent_directories(tmp_path: Path) -> None:
     assert _storage.load_yaml(path) == {"created": True}
 
 
+@pytest.mark.parametrize("text", ["\x85", "a\x85b", "\x85\n\u2028\u2029", "café ☕"])
+def test_unicode_line_breaks_round_trip_in_keys_and_values(tmp_path, text):
+    path = tmp_path / "unicode.yaml"
+    expected = {text: text, "nested": [text]}
+    _storage.save_yaml(path, expected)
+    assert _storage.load_yaml(path) == expected
+    if "\x85" in text:
+        assert "\\N" in path.read_text(encoding="utf-8")
+    else:
+        assert text in path.read_text(encoding="utf-8")
+
+
 def test_validation_happens_before_filesystem_changes(tmp_path: Path) -> None:
     directory = tmp_path / "must-not-exist"
     path = directory / "config.yaml"
@@ -139,7 +202,7 @@ def test_yaml_serialization_errors_are_wrapped(
     def fail_dump(*args: object, **kwargs: object) -> str:
         raise _storage.yaml.YAMLError("cannot serialize")
 
-    monkeypatch.setattr(_storage.yaml, "safe_dump", fail_dump)
+    monkeypatch.setattr(_storage.yaml, "dump", fail_dump)
 
     with pytest.raises(ConfigFormatError, match="cannot serialize"):
         _storage.save_yaml(tmp_path / "config.yaml", {"value": 1})

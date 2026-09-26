@@ -17,6 +17,7 @@ task-oriented guides below for behavioral details and the :doc:`API reference
    readme_link
    concepts
    examples
+   user_preferences
    recipes
 
 .. toctree::

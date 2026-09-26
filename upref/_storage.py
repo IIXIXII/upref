@@ -16,6 +16,7 @@ from __future__ import annotations
 import os
 import tempfile
 from collections.abc import Mapping
+from contextlib import ExitStack
 from pathlib import Path
 from typing import TextIO
 
@@ -43,7 +44,10 @@ class _ConfigLoader(yaml.SafeLoader):
         seen: set[tuple[str, str]] = set()
         for key_node, _ in node.value:
             # Merge keys are directives; their inherited keys may be overridden.
-            if key_node.tag not in {"tag:yaml.org,2002:str", "tag:yaml.org,2002:merge"}:
+            if not isinstance(key_node, yaml.ScalarNode) or key_node.tag not in {
+                "tag:yaml.org,2002:str",
+                "tag:yaml.org,2002:merge",
+            }:
                 raise yaml.constructor.ConstructorError(
                     "while reading a configuration mapping",
                     node.start_mark,
@@ -60,6 +64,28 @@ class _ConfigLoader(yaml.SafeLoader):
                 )
             seen.add(key)
         super().flatten_mapping(node)
+
+
+class _ConfigDumper(yaml.SafeDumper):
+    """Preserve Unicode NEL characters that YAML otherwise folds into spaces."""
+
+    def represent_str(self, data: str) -> yaml.ScalarNode:
+        """Escape NEL using double quotes while keeping other Unicode readable."""
+        return self.represent_scalar(
+            "tag:yaml.org,2002:str", data, style='"' if "\x85" in data else None
+        )
+
+
+_ConfigDumper.add_representer(str, _ConfigDumper.represent_str)
+
+
+def _remove_temporary_file(path: Path) -> None:
+    """Attempt cleanup without masking the original persistence failure."""
+    try:
+        path.unlink(missing_ok=True)
+    except OSError:
+        # A uniquely named temporary file is never loaded as configuration.
+        pass
 
 
 def _display_path(path: PathLike) -> Path:
@@ -202,8 +228,9 @@ def save_yaml(path: PathLike, data: Mapping[str, ConfigValue]) -> None:
         ) from error
 
     try:
-        serialized = yaml.safe_dump(
+        serialized = yaml.dump(
             normalized,
+            Dumper=_ConfigDumper,
             allow_unicode=True,
             sort_keys=False,
             default_flow_style=False,
@@ -213,38 +240,31 @@ def save_yaml(path: PathLike, data: Mapping[str, ConfigValue]) -> None:
             f"Unable to serialize configuration data for {resolved}: {error}"
         ) from error
 
-    temporary_path: Path | None = None
     try:
         resolved.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            newline="\n",
-            prefix=f".{resolved.name}.",
-            suffix=".tmp",
-            dir=resolved.parent,
-            delete=False,
-        ) as stream:
-            temporary_path = Path(stream.name)
-            stream.write(serialized)
-            stream.flush()
-            os.fsync(stream.fileno())
+        with ExitStack() as cleanup:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                newline="\n",
+                prefix=f".{resolved.name}.",
+                suffix=".tmp",
+                dir=resolved.parent,
+                delete=False,
+            ) as stream:
+                temporary_path = Path(stream.name)
+                cleanup.callback(_remove_temporary_file, temporary_path)
+                stream.write(serialized)
+                stream.flush()
+                os.fsync(stream.fileno())
 
-        if os.name == "posix":
-            os.chmod(temporary_path, 0o600)
-        os.replace(temporary_path, resolved)
+            if os.name == "posix":
+                os.chmod(temporary_path, 0o600)
+            os.replace(temporary_path, resolved)
     except (OSError, ValueError, UnicodeError) as error:
         raise ConfigWriteError(
             f"Unable to write configuration file {resolved}: {error}"
         ) from error
-    finally:
-        if temporary_path is not None:
-            try:
-                temporary_path.unlink(missing_ok=True)
-            except OSError:
-                # The primary persistence error is more useful than a cleanup
-                # error, and a uniquely named temporary file is never loaded.
-                pass
 
 
 def delete_file(path: PathLike) -> bool:

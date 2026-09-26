@@ -1,5 +1,36 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Ten runnable user-preference scenarios: first-run setup, Apply/Cancel, resets,
+  recent documents, window geometry, account settings, CLI session overrides,
+  portable JSON import/export, backup/restore, and legacy migration preview.
+  The catalog now contains 26 examples, with a dedicated walkthrough guide.
+- Explicit `source_format="auto" | "raw" | "descriptors"` selection and
+  `dry_run=True` previews for legacy migration, retaining the default heuristic
+  and target preflight checks.
+- Hypothesis properties for persistence, copying, merging, and failed writes.
+- Native wxPython integration scenarios with process timeouts and a dedicated
+  Windows CI job; minimum runtime dependency testing on Python 3.10.
+- Functional installed-wheel and resource checks in CI and release automation.
+- A release-based deprecation schedule: v1 wrappers remain through 2.x and are
+  scheduled for removal in 3.0. Explicit migration remains supported.
+
+### Fixed
+
+- Preserve Unicode NEL (U+0085) in YAML keys and values instead of folding it
+  into a space; ordinary Unicode remains readable.
+- Reject non-scalar YAML keys carrying scalar tags with `ConfigFormatError`
+  and a source location instead of leaking a `TypeError`.
+- Reject null characters in configuration directories during construction.
+- Normalize string subclass keys to plain strings, preserving their underlying
+  text so string-backed enum keys can be saved. Scalar enum values still need
+  explicit conversion; normalized key collisions are rejected.
+- Measure branch coverage as well as statement coverage, retaining the 100%
+  gate and covering application reuse and pre-write failures.
+
 ## 2.1.0
 
 ### Added

@@ -137,12 +137,15 @@ def _absolute_directory(directory: PathLike, *, label: str) -> Path:
     except (TypeError, ValueError, OSError) as error:
         raise ConfigPathError(f"Invalid {label}: {directory!r}") from error
 
+    if "\x00" in str(path):
+        raise ConfigPathError(f"{label} must not contain a null character")
+
     if not path.is_absolute():
         raise ConfigPathError(f"{label} must be an absolute path: {path}")
 
     try:
         return path.expanduser().resolve(strict=False)
-    except (OSError, RuntimeError) as error:
+    except (OSError, RuntimeError, ValueError) as error:
         raise ConfigPathError(f"Unable to resolve {label}: {path}") from error
 
 
